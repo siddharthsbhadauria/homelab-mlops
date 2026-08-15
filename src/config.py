@@ -8,7 +8,7 @@ class Config:
     TELEMETRY_DB_PATH: str = os.getenv("TELEMETRY_DB_PATH", "/data/auto-datapulse/telemetry.duckdb")
     FEATURE_OUTPUT_DIR: str = os.getenv("FEATURE_OUTPUT_DIR", "/data/homelab-mlops/features")
     MODEL_DIR: str = os.getenv("MODEL_DIR", "/data/homelab-mlops/models")
-    MLFLOW_TRACKING_URI: str = os.getenv("MLFLOW_TRACKING_URI", "http://mlflow:5000")
+    MLFLOW_TRACKING_URI: str = os.getenv("MLFLOW_TRACKING_URI", f"http://{os.getenv('MLFLOW_HOST', 'mlflow')}:{os.getenv('MLFLOW_PORT', '5000')}")
     EXPERIMENT_NAME: str = "homelab-anomaly-detection"
     CONTAMINATION: float = float(os.getenv("CONTAMINATION", "0.05"))
     ROLLING_WINDOW_SHORT: int = 4   # 4 samples = 1 hour at 15-min intervals
