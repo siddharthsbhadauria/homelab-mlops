@@ -4,7 +4,6 @@ Runs feature engineering, model training, and monitoring as a daemon.
 """
 
 import os
-import sys
 import time
 import logging
 import threading
@@ -92,10 +91,10 @@ def run_pipeline_daemon():
 
 
 if __name__ == "__main__":
-    config = Config()
+    cfg = Config()
 
     # Start the anomaly monitor in a background thread
-    monitor_thread = threading.Thread(target=run_monitor_daemon, args=(config,), daemon=True)
+    monitor_thread = threading.Thread(target=run_monitor_daemon, args=(cfg,), daemon=True)
     monitor_thread.start()
 
     # Run the main pipeline in the foreground

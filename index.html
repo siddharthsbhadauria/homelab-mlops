@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Homelab MLOps Platform — Telemetry Anomaly Detection & Model Registry</title>
+  <meta name="description" content="Self-hosted production MLOps & real-time telemetry anomaly detection platform on UGREEN NAS / Docker with DuckDB, MLflow, FastAPI, and Prometheus.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,300;0,400;0,500;0,700;1,400&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="dark-theme">
+  <!-- Top Navigation Bar -->
+  <header class="navbar">
+    <div class="nav-container">
+      <div class="brand">
+        <span class="pulse-indicator"></span>
+        <span class="brand-title">HOMELAB<span class="accent-text">.MLOPS</span></span>
+        <span class="badge-tag">v1.0.0 CPU</span>
+      </div>
+      <div class="nav-controls">
+        <div class="status-chip">
+          <span class="chip-dot"></span>
+          <span>FastAPI :8000</span>
+        </div>
+        <div class="status-chip">
+          <span class="chip-dot green"></span>
+          <span>MLflow :5000</span>
+        </div>
+        <button id="themeToggle" class="btn-icon" title="Toggle Theme" aria-label="Toggle Theme">
+          <span id="themeIcon">☀️</span>
+        </button>
+        <a href="https://github.com/siddharthsbhadauria/homelab-mlops" target="_blank" rel="noopener noreferrer" class="btn-github">
+          <svg height="18" width="18" viewBox="0 0 16 16" fill="currentColor">
+            <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/>
+          </svg>
+          <span>GitHub</span>
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <main class="container">
+    <!-- Hero Section -->
+    <section class="hero-section">
+      <div class="hero-content">
+        <div class="pill-badge">
+          <span>⚡ Autonomous Telemetry ML Platform</span>
+        </div>
+        <h1 class="hero-title">Self-Hosted MLOps & Real-Time Anomaly Engine</h1>
+        <p class="hero-subtitle">
+          Continuous feature store on <strong>DuckDB</strong>, experiment tracking with <strong>MLflow</strong>, sub-10ms inference via <strong>FastAPI</strong>, and instant incident dispatching through the <strong>GitHub Issues API</strong> on <strong>UGREEN NAS</strong> hardware.
+        </p>
+      </div>
+
+      <!-- KPI Grid -->
+      <div class="kpi-grid">
+        <div class="kpi-card">
+          <div class="kpi-label">PRIMARY MODEL</div>
+          <div class="kpi-val" id="kpiModel">IsolationForest</div>
+          <div class="kpi-sub">Contamination 5% · 200 Trees</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">FEATURE STORE</div>
+          <div class="kpi-val highlight" id="kpiFeatures">18 Features</div>
+          <div class="kpi-sub">1h / 6h Windows + Rates of Change</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">INFERENCE LATENCY</div>
+          <div class="kpi-val green-text" id="kpiLatency">&lt; 4.2 ms</div>
+          <div class="kpi-sub">Async Microservice (:8000)</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">OBSERVABILITY</div>
+          <div class="kpi-val" id="kpiMetrics">Prometheus + Grafana</div>
+          <div class="kpi-sub">Live p50/p95/p99 Histograms</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Interactive Section: Live Anomaly Playground -->
+    <section class="card simulator-card">
+      <div class="card-header">
+        <div>
+          <h2>🧪 Interactive Telemetry Anomaly Simulator</h2>
+          <p class="section-desc">Adjust the system load sliders to simulate live homelab telemetry and observe real-time classification, anomaly scores, and feature vectors.</p>
+        </div>
+        <button id="btnPresetAnomaly" class="btn-preset">Simulate CPU Spike 🚨</button>
+        <button id="btnPresetNormal" class="btn-preset-alt">Simulate Normal State ✅</button>
+      </div>
+
+      <div class="simulator-grid">
+        <!-- Sliders Form -->
+        <div class="controls-pane">
+          <div class="slider-group">
+            <div class="slider-header">
+              <label for="cpuRange">CPU Utilization</label>
+              <span class="slider-val" id="cpuVal">18.5%</span>
+            </div>
+            <input type="range" id="cpuRange" min="0" max="100" step="0.5" value="18.5">
+          </div>
+
+          <div class="slider-group">
+            <div class="slider-header">
+              <label for="ramRange">RAM Utilization</label>
+              <span class="slider-val" id="ramVal">28.0%</span>
+            </div>
+            <input type="range" id="ramRange" min="0" max="100" step="0.5" value="28.0">
+          </div>
+
+          <div class="slider-group">
+            <div class="slider-header">
+              <label for="diskRange">Disk Capacity Usage</label>
+              <span class="slider-val" id="diskVal">24.0%</span>
+            </div>
+            <input type="range" id="diskRange" min="0" max="100" step="0.5" value="24.0">
+          </div>
+
+          <div class="slider-group">
+            <div class="slider-header">
+              <label for="spikeRange">CPU Rate of Change (Δ 15m)</label>
+              <span class="slider-val" id="spikeVal">+1.2%</span>
+            </div>
+            <input type="range" id="spikeRange" min="-50" max="50" step="0.5" value="1.2">
+          </div>
+        </div>
+
+        <!-- Prediction Result Card -->
+        <div class="inference-pane">
+          <div class="inference-status" id="inferenceBadge">
+            <span class="status-icon" id="statusIcon">🟢</span>
+            <div>
+              <div class="status-title" id="statusTitle">OPERATIONAL HEALTHY</div>
+              <div class="status-sub" id="statusSub">Inference evaluated within nominal bounds</div>
+            </div>
+          </div>
+
+          <div class="score-display">
+            <div class="score-row">
+              <span>Decision Score:</span>
+              <strong id="decisionScore">+0.1428</strong>
+            </div>
+            <div class="progress-bar-bg">
+              <div class="progress-bar-fill" id="scoreBar" style="width: 75%;"></div>
+            </div>
+            <div class="score-legend">
+              <span>-0.5 (Severe Anomaly)</span>
+              <span>0.0 (Threshold)</span>
+              <span>+0.5 (Normal)</span>
+            </div>
+          </div>
+
+          <div class="terminal-preview">
+            <div class="terminal-bar">
+              <span>REST /predict payload</span>
+              <span class="code-copy" id="btnCopyJson">Copy JSON</span>
+            </div>
+            <pre><code id="jsonPayload">{
+  "timestamp": "2026-08-15T22:15:00Z",
+  "system": {
+    "cpu_percent": 18.5,
+    "ram_percent": 28.0,
+    "disk_percent": 24.0
+  },
+  "anomaly": false,
+  "anomaly_score": 0.1428
+}</code></pre>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Architecture & Features Breakdown -->
+    <section class="grid-2col">
+      <!-- 18 Features Card -->
+      <div class="card">
+        <div class="card-header">
+          <h3>📐 Feature Store Matrix (18 Features)</h3>
+        </div>
+        <p class="section-desc">Computed directly inside DuckDB via OLAP SQL window functions before Parquet export:</p>
+        <div class="features-list">
+          <div class="feature-tag"><span>cpu_percent</span></div>
+          <div class="feature-tag"><span>ram_percent</span></div>
+          <div class="feature-tag"><span>disk_percent</span></div>
+          <div class="feature-tag"><span>cpu_rolling_mean_1h</span></div>
+          <div class="feature-tag"><span>cpu_rolling_std_1h</span></div>
+          <div class="feature-tag"><span>ram_rolling_mean_1h</span></div>
+          <div class="feature-tag"><span>ram_rolling_std_1h</span></div>
+          <div class="feature-tag"><span>disk_rolling_mean_1h</span></div>
+          <div class="feature-tag"><span>disk_rolling_std_1h</span></div>
+          <div class="feature-tag"><span>cpu_rolling_mean_6h</span></div>
+          <div class="feature-tag"><span>cpu_rolling_std_6h</span></div>
+          <div class="feature-tag"><span>ram_rolling_mean_6h</span></div>
+          <div class="feature-tag"><span>ram_rolling_std_6h</span></div>
+          <div class="feature-tag"><span>cpu_rate_of_change</span></div>
+          <div class="feature-tag"><span>ram_rate_of_change</span></div>
+          <div class="feature-tag"><span>disk_rate_of_change</span></div>
+          <div class="feature-tag"><span>hour_of_day</span></div>
+          <div class="feature-tag"><span>day_of_week</span></div>
+        </div>
+      </div>
+
+      <!-- Infrastructure Stack Card -->
+      <div class="card">
+        <div class="card-header">
+          <h3>🐳 Containerized Stack on NAS</h3>
+        </div>
+        <div class="stack-rows">
+          <div class="stack-item">
+            <span class="service-name">FastAPI API</span>
+            <span class="service-desc">Sub-10ms online prediction & Prometheus endpoint</span>
+            <span class="port-tag">:8000</span>
+          </div>
+          <div class="stack-item">
+            <span class="service-name">MLflow Registry</span>
+            <span class="service-desc">Experiment tracking & model artifact store</span>
+            <span class="port-tag">:5000</span>
+          </div>
+          <div class="stack-item">
+            <span class="service-name">Prometheus</span>
+            <span class="service-desc">Time-series scraper for inference metrics</span>
+            <span class="port-tag">:9090</span>
+          </div>
+          <div class="stack-item">
+            <span class="service-name">Grafana</span>
+            <span class="service-desc">Real-time p50/p95/p99 latency & anomaly dashboards</span>
+            <span class="port-tag">:3000</span>
+          </div>
+          <div class="stack-item">
+            <span class="service-name">Pipeline Daemon</span>
+            <span class="service-desc">Continuous 6h training & 15m incident scanner</span>
+            <span class="port-tag">Background</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+      <div>
+        <span>Built by <strong>Siddharth Bhadauria</strong> · Homelab MLOps Platform</span>
+      </div>
+      <div class="footer-links">
+        <a href="https://github.com/siddharthsbhadauria/homelab-mlops" target="_blank" rel="noopener noreferrer">GitHub Repository</a>
+        <a href="https://github.com/siddharthsbhadauria/auto-datapulse" target="_blank" rel="noopener noreferrer">auto-datapulse Integration</a>
+      </div>
+    </footer>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>

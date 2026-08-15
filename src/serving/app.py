@@ -6,10 +6,10 @@ import json
 import logging
 import time
 from contextlib import asynccontextmanager
-from typing import Dict, Any, Optional
+from typing import Any, Optional
 
 import joblib
-from fastapi import FastAPI, HTTPException, Request, Response
+from fastapi import FastAPI, HTTPException, Response
 from fastapi.responses import RedirectResponse
 from pydantic import BaseModel, Field
 from prometheus_client import Counter, Histogram, Gauge, generate_latest, CONTENT_TYPE_LATEST
@@ -61,26 +61,24 @@ class HealthResponse(BaseModel):
     model_version: str = "unknown"
     last_trained: str = "unknown"
 
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    # Startup
-    logger.info("Initializing Homelab MLOps Serving Engine...")
+
+def init_app_state(target_app: FastAPI):
+    """Initializes app.state defaults."""
     config = Config()
-    app.state.config = config
-    app.state.model = None
-    app.state.metadata = {}
-    app.state.model_loaded = False
-    app.state.feature_engineer = FeatureEngineer(config)
+    target_app.state.config = config
+    target_app.state.model = None
+    target_app.state.metadata = {}
+    target_app.state.model_loaded = False
+    target_app.state.feature_engineer = FeatureEngineer(config)
 
     metadata_path = os.path.join(config.MODEL_DIR, "metadata.json")
     if os.path.exists(metadata_path):
         try:
-            with open(metadata_path, "r") as f:
-                app.state.metadata = json.load(f)
+            with open(metadata_path, "r", encoding="utf-8") as f:
+                target_app.state.metadata = json.load(f)
         except Exception as e:
             logger.warning(f"Failed to parse metadata: {e}")
 
-    # Check candidate model paths in priority order
     candidate_paths = [
         os.path.join(config.MODEL_DIR, "primary_model.joblib"),
         os.path.join(config.MODEL_DIR, "isolation_forest.joblib"),
@@ -90,20 +88,22 @@ async def lifespan(app: FastAPI):
     for model_path in candidate_paths:
         if os.path.exists(model_path):
             try:
-                app.state.model = joblib.load(model_path)
-                app.state.model_loaded = True
+                target_app.state.model = joblib.load(model_path)
+                target_app.state.model_loaded = True
                 logger.info(f"Successfully loaded model from {model_path}")
                 break
             except Exception as e:
                 logger.error(f"Error loading model from {model_path}: {e}")
 
-    if not app.state.model_loaded:
-        logger.warning("No pre-trained model file found. Serving in uninitialized mode until first training run.")
 
+@asynccontextmanager
+async def lifespan(target_app: FastAPI):
+    logger.info("Initializing Homelab MLOps Serving Engine...")
+    init_app_state(target_app)
     yield
-    # Shutdown
     logger.info("Shutting down Homelab MLOps Serving Engine...")
-    app.state.model = None
+    target_app.state.model = None
+
 
 app = FastAPI(
     title="Homelab MLOps Anomaly Detection Engine",
@@ -112,13 +112,18 @@ app = FastAPI(
     lifespan=lifespan
 )
 
+# Eagerly initialize state so tests and standalone clients have valid state
+init_app_state(app)
+
+
 @app.get("/", include_in_schema=False)
 async def root():
     return RedirectResponse(url="/docs")
 
+
 @app.get("/health", response_model=HealthResponse)
 async def health():
-    if not app.state.model_loaded:
+    if not getattr(app.state, "model_loaded", False):
         return HealthResponse(
             status="ok",
             model_loaded=False,
@@ -127,22 +132,23 @@ async def health():
             last_trained="none"
         )
 
+    metadata = getattr(app.state, "metadata", {})
     return HealthResponse(
         status="ok",
         model_loaded=True,
-        model_type=app.state.metadata.get("model_type", "IsolationForest"),
-        model_version=str(app.state.metadata.get("mlflow_run_id", "local-v1")),
-        last_trained=str(app.state.metadata.get("trained_at", "recent"))
+        model_type=metadata.get("model_type", "IsolationForest"),
+        model_version=str(metadata.get("mlflow_run_id", "local-v1")),
+        last_trained=str(metadata.get("trained_at", "recent"))
     )
+
 
 @app.post("/predict", response_model=PredictionResponse)
 async def predict(data: TelemetryInput):
-    if not app.state.model_loaded or app.state.model is None:
+    if not getattr(app.state, "model_loaded", False) or app.state.model is None:
         raise HTTPException(status_code=503, detail="Model is not loaded. Train a model first.")
 
     start_time = time.time()
     try:
-        # Prepare snapshot dict
         sys_dict = data.system.model_dump() if hasattr(data.system, "model_dump") else data.system.dict()
         io_dict = data.disk_io.model_dump() if (data.disk_io and hasattr(data.disk_io, "model_dump")) else (data.disk_io.dict() if data.disk_io else {})
 
@@ -156,8 +162,9 @@ async def predict(data: TelemetryInput):
         # Extract features
         features = app.state.feature_engineer.compute_single_point_features(snapshot)
 
-        # Prepare feature vector based on expected columns
-        feature_columns = app.state.metadata.get("feature_columns", app.state.config.FEATURE_COLUMNS)
+        # Prepare feature vector
+        metadata = getattr(app.state, "metadata", {})
+        feature_columns = metadata.get("feature_columns", app.state.config.FEATURE_COLUMNS)
         feature_vector = [[features.get(col, 0.0) for col in feature_columns]]
 
         # Predict
@@ -170,11 +177,8 @@ async def predict(data: TelemetryInput):
             score = 0.0
 
         label = int(model.predict(feature_vector)[0])
-
-        # In sklearn anomaly detection, -1 is anomaly, 1 is normal
         is_anomaly = (label == -1)
 
-        # Update metrics
         PREDICTION_COUNT.labels(result="anomaly" if is_anomaly else "normal").inc()
         ANOMALY_SCORE.set(score)
 
@@ -186,16 +190,18 @@ async def predict(data: TelemetryInput):
             is_anomaly=is_anomaly,
             anomaly_score=score,
             timestamp=data.timestamp,
-            model_type=app.state.metadata.get("model_type", "IsolationForest"),
-            model_version=str(app.state.metadata.get("mlflow_run_id", "local-v1"))
+            model_type=metadata.get("model_type", "IsolationForest"),
+            model_version=str(metadata.get("mlflow_run_id", "local-v1"))
         )
     except Exception as e:
         logger.error(f"Error during prediction: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
+
 @app.get("/metrics")
 async def metrics():
     return Response(generate_latest(), media_type=CONTENT_TYPE_LATEST)
+
 
 if __name__ == "__main__":
     import uvicorn

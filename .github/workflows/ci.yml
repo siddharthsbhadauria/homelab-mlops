@@ -20,12 +20,14 @@ jobs:
           python-version: "3.11"
       - name: Install dependencies
         run: pip install ruff
-      - name: Run Ruff
+      - name: Run Ruff Linter
         run: ruff check src/ tests/
 
   test:
     runs-on: ubuntu-latest
     needs: lint
+    env:
+      PYTHONPATH: .
     steps:
       - uses: actions/checkout@v4
       - name: Set up Python 3.11
@@ -34,9 +36,10 @@ jobs:
           python-version: "3.11"
       - name: Install dependencies
         run: |
+          pip install --upgrade pip
           pip install -r requirements.txt
           pip install pytest pytest-cov httpx
-      - name: Run Tests
+      - name: Run Pytest Suite
         run: pytest tests/ -v --cov=src --cov-report=xml
 
   docker:
