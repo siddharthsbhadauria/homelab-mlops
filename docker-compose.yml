@@ -8,7 +8,7 @@ services:
     volumes:
       - mlflow_data:/mlflow
     ports:
-      - "5000:5000"
+      - "${MLFLOW_PORT:-5000}:5000"
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
       interval: 30s
@@ -21,7 +21,7 @@ services:
     build: .
     command: python -m uvicorn src.serving.app:app --host 0.0.0.0 --port 8000
     ports:
-      - "8000:8000"
+      - "${API_PORT:-8000}:8000"
     environment:
       - TELEMETRY_DB_PATH=/data/auto-datapulse/telemetry.duckdb
       - MODEL_DIR=/data/homelab-mlops/models
@@ -69,7 +69,7 @@ services:
       - ./prometheus:/etc/prometheus:ro
       - prometheus_data:/prometheus
     ports:
-      - "9090:9090"
+      - "${PROMETHEUS_PORT:-9090}:9090"
     restart: unless-stopped
 
   # Grafana dashboards for metrics visualization
@@ -79,7 +79,7 @@ services:
       - ./grafana/provisioning:/etc/grafana/provisioning:ro
       - grafana_data:/var/lib/grafana
     ports:
-      - "3000:3000"
+      - "${GRAFANA_PORT:-3030}:3000"
     environment:
       - GF_SECURITY_ADMIN_USER=admin
       - GF_SECURITY_ADMIN_PASSWORD=homelab
