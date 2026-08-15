@@ -1,97 +1,111 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Homelab MLOps Platform — Telemetry Anomaly Detection & Model Registry</title>
+  <title>Homelab-MLOps | Self-Hosted Telemetry Anomaly Detection & Model Governance</title>
   <meta name="description" content="Self-hosted production MLOps & real-time telemetry anomaly detection platform on UGREEN NAS / Docker with DuckDB, MLflow, FastAPI, and Prometheus.">
+  <meta name="author" content="Siddharth Singh Bhadauria">
+
+  <!-- Open Graph -->
+  <meta property="og:title" content="Homelab-MLOps: Anomaly Detection & Governance Engine">
+  <meta property="og:description" content="Self-hosted MLOps platform on UGREEN NAS with DuckDB feature store, MLflow tracking, and FastAPI serving.">
+
+  <!-- Universal JetBrains Mono Font -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,300;0,400;0,500;0,700;1,400&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css">
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,400..800;1,400..800&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="style.css?v=1.0.0">
+
+  <!-- Dynamic SVG Favicon -->
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🚀</text></svg>">
 </head>
-<body class="dark-theme">
-  <!-- Top Navigation Bar -->
+<body>
+  <!-- Ambient background glow -->
+  <div class="glow-bg glow-purple"></div>
+  <div class="glow-bg glow-cyan"></div>
+
+  <!-- Header / Navigation -->
   <header class="navbar">
-    <div class="nav-container">
-      <div class="brand">
-        <span class="pulse-indicator"></span>
-        <span class="brand-title">HOMELAB<span class="accent-text">.MLOPS</span></span>
-        <span class="badge-tag">v1.0.0 CPU</span>
-      </div>
-      <div class="nav-controls">
-        <div class="status-chip">
-          <span class="chip-dot"></span>
-          <span>FastAPI :8000</span>
+    <div class="container nav-content">
+      <a href="#" class="brand" title="Homelab-MLOps">
+        <div class="brand-icon">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
         </div>
-        <div class="status-chip">
-          <span class="chip-dot green"></span>
-          <span>MLflow :5000</span>
+        <div class="brand-text">
+          <span class="brand-title">Homelab-MLOps</span>
+          <span class="brand-tag">Anomaly Engine & Model Registry</span>
         </div>
-        <button id="themeToggle" class="btn-icon" title="Toggle Theme" aria-label="Toggle Theme">
-          <span id="themeIcon">☀️</span>
+      </a>
+
+      <div class="nav-actions">
+        <button id="themeToggle" class="btn-icon-theme" title="Toggle Theme" aria-label="Toggle Theme">
+          <span class="theme-icon-dark">🌙</span>
+          <span class="theme-icon-light">☀️</span>
         </button>
-        <a href="https://github.com/siddharthsbhadauria/homelab-mlops" target="_blank" rel="noopener noreferrer" class="btn-github">
-          <svg height="18" width="18" viewBox="0 0 16 16" fill="currentColor">
-            <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/>
-          </svg>
+
+        <span class="status-badge pulse-dot">
+          <span class="dot"></span> Self-Hosted NAS Daemon Active
+        </span>
+
+        <a href="https://github.com/siddharthsbhadauria/homelab-mlops" target="_blank" rel="noopener noreferrer" class="btn btn-github">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
           <span>GitHub</span>
         </a>
       </div>
     </div>
   </header>
 
+  <!-- Hero Section -->
   <main class="container">
-    <!-- Hero Section -->
     <section class="hero-section">
-      <div class="hero-content">
-        <div class="pill-badge">
-          <span>⚡ Autonomous Telemetry ML Platform</span>
-        </div>
-        <h1 class="hero-title">Self-Hosted MLOps & Real-Time Anomaly Engine</h1>
-        <p class="hero-subtitle">
-          Continuous feature store on <strong>DuckDB</strong>, experiment tracking with <strong>MLflow</strong>, sub-10ms inference via <strong>FastAPI</strong>, and instant incident dispatching through the <strong>GitHub Issues API</strong> on <strong>UGREEN NAS</strong> hardware.
-        </p>
+      <div class="hero-badge">
+        <span class="sparkle">⚡</span> Automated Homelab MLOps Pipeline
       </div>
+      <h1 class="hero-title">
+        Self-Hosted Anomaly Engine & <br>
+        <span class="gradient-text">Model Governance Platform</span>
+      </h1>
+      <p class="hero-subtitle">
+        Continuous DuckDB SQL feature store, dual-model benchmarking with MLflow experiment tracking, sub-10ms FastAPI serving, and automated GitHub Issues incident alerting on UGREEN NAS hardware.
+      </p>
 
-      <!-- KPI Grid -->
-      <div class="kpi-grid">
-        <div class="kpi-card">
-          <div class="kpi-label">PRIMARY MODEL</div>
-          <div class="kpi-val" id="kpiModel">IsolationForest</div>
-          <div class="kpi-sub">Contamination 5% · 200 Trees</div>
+      <!-- Stats Grid -->
+      <div class="stats-grid">
+        <div class="stat-card">
+          <span class="stat-number">IsolationForest</span>
+          <span class="stat-label">Primary Active Model</span>
         </div>
-        <div class="kpi-card">
-          <div class="kpi-label">FEATURE STORE</div>
-          <div class="kpi-val highlight" id="kpiFeatures">18 Features</div>
-          <div class="kpi-sub">1h / 6h Windows + Rates of Change</div>
+        <div class="stat-card">
+          <span class="stat-number">18 Features</span>
+          <span class="stat-label">Sliding Window Feature Store</span>
         </div>
-        <div class="kpi-card">
-          <div class="kpi-label">INFERENCE LATENCY</div>
-          <div class="kpi-val green-text" id="kpiLatency">&lt; 4.2 ms</div>
-          <div class="kpi-sub">Async Microservice (:8000)</div>
+        <div class="stat-card">
+          <span class="stat-number">&lt; 4.2 ms</span>
+          <span class="stat-label">FastAPI Inference Latency</span>
         </div>
-        <div class="kpi-card">
-          <div class="kpi-label">OBSERVABILITY</div>
-          <div class="kpi-val" id="kpiMetrics">Prometheus + Grafana</div>
-          <div class="kpi-sub">Live p50/p95/p99 Histograms</div>
+        <div class="stat-card">
+          <span class="stat-number">Prometheus + Grafana</span>
+          <span class="stat-label">Observability Stack</span>
         </div>
       </div>
     </section>
 
-    <!-- Interactive Section: Live Anomaly Playground -->
-    <section class="card simulator-card">
+    <!-- Interactive Simulator -->
+    <section class="simulator-card">
       <div class="card-header">
         <div>
           <h2>🧪 Interactive Telemetry Anomaly Simulator</h2>
           <p class="section-desc">Adjust the system load sliders to simulate live homelab telemetry and observe real-time classification, anomaly scores, and feature vectors.</p>
         </div>
-        <button id="btnPresetAnomaly" class="btn-preset">Simulate CPU Spike 🚨</button>
-        <button id="btnPresetNormal" class="btn-preset-alt">Simulate Normal State ✅</button>
+        <div class="preset-actions">
+          <button id="btnPresetAnomaly" class="btn-preset">Simulate CPU Spike 🚨</button>
+          <button id="btnPresetNormal" class="btn-preset-alt">Simulate Normal State ✅</button>
+        </div>
       </div>
 
       <div class="simulator-grid">
-        <!-- Sliders Form -->
         <div class="controls-pane">
           <div class="slider-group">
             <div class="slider-header">
@@ -126,13 +140,12 @@
           </div>
         </div>
 
-        <!-- Prediction Result Card -->
         <div class="inference-pane">
           <div class="inference-status" id="inferenceBadge">
             <span class="status-icon" id="statusIcon">🟢</span>
             <div>
               <div class="status-title" id="statusTitle">OPERATIONAL HEALTHY</div>
-              <div class="status-sub" id="statusSub">Inference evaluated within nominal bounds</div>
+              <div class="status-sub" id="statusSub">Inference evaluated within nominal bounds (5% contamination envelope).</div>
             </div>
           </div>
 
@@ -147,16 +160,22 @@
             <div class="score-legend">
               <span>-0.5 (Severe Anomaly)</span>
               <span>0.0 (Threshold)</span>
-              <span>+0.5 (Normal)</span>
+              <span>+0.5 (Nominal)</span>
             </div>
           </div>
 
-          <div class="terminal-preview">
-            <div class="terminal-bar">
-              <span>REST /predict payload</span>
-              <span class="code-copy" id="btnCopyJson">Copy JSON</span>
+          <!-- Terminal Window Component -->
+          <div class="terminal-window">
+            <div class="terminal-header">
+              <div class="terminal-dots">
+                <span class="dot-red"></span>
+                <span class="dot-yellow"></span>
+                <span class="dot-green"></span>
+              </div>
+              <div class="terminal-title">REST /predict API payload</div>
+              <div class="code-copy" id="btnCopyJson">Copy JSON</div>
             </div>
-            <pre><code id="jsonPayload">{
+            <pre class="terminal-body"><code id="jsonPayload">{
   "timestamp": "2026-08-15T22:15:00Z",
   "system": {
     "cpu_percent": 18.5,
@@ -171,13 +190,10 @@
       </div>
     </section>
 
-    <!-- Architecture & Features Breakdown -->
+    <!-- Matrix Details Grid -->
     <section class="grid-2col">
-      <!-- 18 Features Card -->
-      <div class="card">
-        <div class="card-header">
-          <h3>📐 Feature Store Matrix (18 Features)</h3>
-        </div>
+      <div class="matrix-card">
+        <h3>📐 Feature Store Matrix (18 Features)</h3>
         <p class="section-desc">Computed directly inside DuckDB via OLAP SQL window functions before Parquet export:</p>
         <div class="features-list">
           <div class="feature-tag"><span>cpu_percent</span></div>
@@ -201,15 +217,12 @@
         </div>
       </div>
 
-      <!-- Infrastructure Stack Card -->
-      <div class="card">
-        <div class="card-header">
-          <h3>🐳 Containerized Stack on NAS</h3>
-        </div>
+      <div class="matrix-card">
+        <h3>🐳 Containerized Stack on NAS</h3>
         <div class="stack-rows">
           <div class="stack-item">
-            <span class="service-name">FastAPI API</span>
-            <span class="service-desc">Sub-10ms online prediction & Prometheus endpoint</span>
+            <span class="service-name">FastAPI Engine</span>
+            <span class="service-desc">Sub-10ms online prediction & Prometheus metrics</span>
             <span class="port-tag">:8000</span>
           </div>
           <div class="stack-item">
@@ -219,12 +232,12 @@
           </div>
           <div class="stack-item">
             <span class="service-name">Prometheus</span>
-            <span class="service-desc">Time-series scraper for inference metrics</span>
+            <span class="service-desc">Time-series scraper for inference latency</span>
             <span class="port-tag">:9090</span>
           </div>
           <div class="stack-item">
             <span class="service-name">Grafana</span>
-            <span class="service-desc">Real-time p50/p95/p99 latency & anomaly dashboards</span>
+            <span class="service-desc">Live p50/p95/p99 latency & anomaly dashboards</span>
             <span class="port-tag">:3000</span>
           </div>
           <div class="stack-item">
@@ -239,7 +252,7 @@
     <!-- Footer -->
     <footer class="footer">
       <div>
-        <span>Built by <strong>Siddharth Bhadauria</strong> · Homelab MLOps Platform</span>
+        <span>Built by <strong>Siddharth Singh Bhadauria</strong> · Homelab-MLOps</span>
       </div>
       <div class="footer-links">
         <a href="https://github.com/siddharthsbhadauria/homelab-mlops" target="_blank" rel="noopener noreferrer">GitHub Repository</a>

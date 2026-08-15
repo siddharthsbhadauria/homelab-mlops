@@ -128,11 +128,11 @@ class AnomalyTrainer:
             "model_type": best_model_name,
             "algorithm": best_model_name,
             "trained_at": datetime.utcnow().isoformat() + "Z",
-            "n_samples": len(X),
-            "features": self.config.FEATURE_COLUMNS,
-            "feature_columns": self.config.FEATURE_COLUMNS,
-            "anomaly_rate": best_anomaly_rate,
-            "mlflow_run_id": None
+            "n_samples": int(len(X)),
+            "features": list(self.config.FEATURE_COLUMNS),
+            "feature_columns": list(self.config.FEATURE_COLUMNS),
+            "anomaly_rate": float(best_anomaly_rate),
+            "mlflow_run_id": "local-run"
         }
 
         # Log run to MLflow
@@ -161,20 +161,21 @@ class AnomalyTrainer:
                 mlflow.log_artifact(primary_path, "models")
 
                 feat_json_path = os.path.join(self.config.MODEL_DIR, "feature_columns.json")
-                with open(feat_json_path, "w") as f:
+                with open(feat_json_path, "w", encoding="utf-8") as f:
                     json.dump(self.config.FEATURE_COLUMNS, f, indent=2)
                 mlflow.log_artifact(feat_json_path, "metadata")
 
                 mlflow.set_tag("model_type", best_model_name)
                 mlflow.set_tag("phase", "cpu-only")
 
-                metadata["mlflow_run_id"] = run.info.run_id
+                if run and hasattr(run, "info") and hasattr(run.info, "run_id"):
+                    metadata["mlflow_run_id"] = str(run.info.run_id)
 
         except Exception as e:
             logger.warning(f"MLflow tracking skipped / unavailable: {e}")
 
         meta_path = os.path.join(self.config.MODEL_DIR, "metadata.json")
-        with open(meta_path, "w") as f:
+        with open(meta_path, "w", encoding="utf-8") as f:
             json.dump(metadata, f, indent=2)
 
         return {

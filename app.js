@@ -1,30 +1,20 @@
-// Interactive Client-Side MLOps Engine Simulator
+// Homelab MLOps Interactive Controller & Dual Theme Engine
 document.addEventListener('DOMContentLoaded', () => {
-  // Theme Toggle
+  // Theme Toggle Engine (Consistent with cloud-finops-rag & tf-cost-governor)
   const themeToggle = document.getElementById('themeToggle');
-  const themeIcon = document.getElementById('themeIcon');
-  const body = document.body;
+  const htmlElement = document.documentElement;
 
-  const savedTheme = localStorage.getItem('mlops_theme') || 'dark';
-  if (savedTheme === 'light') {
-    body.classList.remove('dark-theme');
-    body.classList.add('light-theme');
-    themeIcon.textContent = '🌙';
+  const savedTheme = localStorage.getItem('theme') || 'dark';
+  htmlElement.setAttribute('data-theme', savedTheme);
+
+  if (themeToggle) {
+    themeToggle.addEventListener('click', () => {
+      const currentTheme = htmlElement.getAttribute('data-theme') || 'dark';
+      const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+      htmlElement.setAttribute('data-theme', newTheme);
+      localStorage.setItem('theme', newTheme);
+    });
   }
-
-  themeToggle.addEventListener('click', () => {
-    if (body.classList.contains('dark-theme')) {
-      body.classList.remove('dark-theme');
-      body.classList.add('light-theme');
-      themeIcon.textContent = '🌙';
-      localStorage.setItem('mlops_theme', 'light');
-    } else {
-      body.classList.remove('light-theme');
-      body.classList.add('dark-theme');
-      themeIcon.textContent = '☀️';
-      localStorage.setItem('mlops_theme', 'dark');
-    }
-  });
 
   // Slider Elements
   const cpuRange = document.getElementById('cpuRange');
@@ -37,7 +27,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const diskVal = document.getElementById('diskVal');
   const spikeVal = document.getElementById('spikeVal');
 
-  // Outputs
+  // Output Elements
   const inferenceBadge = document.getElementById('inferenceBadge');
   const statusIcon = document.getElementById('statusIcon');
   const statusTitle = document.getElementById('statusTitle');
@@ -48,19 +38,20 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Simulation Evaluation (Mimics IsolationForest decision function with learned boundaries)
   function evaluateInference() {
+    if (!cpuRange || !ramRange || !diskRange || !spikeRange) return;
+
     const cpu = parseFloat(cpuRange.value);
     const ram = parseFloat(ramRange.value);
     const disk = parseFloat(diskRange.value);
     const spike = parseFloat(spikeRange.value);
 
-    // Update labels
+    // Update slider label indicators
     cpuVal.textContent = `${cpu.toFixed(1)}%`;
     ramVal.textContent = `${ram.toFixed(1)}%`;
     diskVal.textContent = `${disk.toFixed(1)}%`;
     spikeVal.textContent = `${spike >= 0 ? '+' : ''}${spike.toFixed(1)}%`;
 
     // Decision function formula approximating trained multi-variate isolation trees
-    // Nominal baseline: cpu ~15%, ram ~30%, disk ~25%, spike ~0%
     const cpuPenalty = Math.max(0, (cpu - 70) / 30) * 0.45;
     const ramPenalty = Math.max(0, (ram - 80) / 20) * 0.35;
     const diskPenalty = Math.max(0, (disk - 85) / 15) * 0.30;
@@ -72,7 +63,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const isAnomaly = score < 0.0 || cpu > 90 || ram > 90 || Math.abs(spike) > 35;
 
-    // Update UI elements
+    // Update decision score display
     decisionScore.textContent = (score >= 0 ? '+' : '') + score.toFixed(4);
 
     // Scale progress bar (-0.5 to +0.5 -> 0% to 100%)
@@ -91,7 +82,7 @@ document.addEventListener('DOMContentLoaded', () => {
       inferenceBadge.className = 'inference-status';
       statusIcon.textContent = '🟢';
       statusTitle.textContent = 'OPERATIONAL HEALTHY';
-      statusTitle.style.color = 'var(--text-primary)';
+      statusTitle.style.color = 'var(--text-main)';
       statusSub.textContent = 'Inference evaluated within nominal bounds (5% contamination envelope).';
       scoreBar.style.backgroundColor = 'var(--accent-green)';
     }
@@ -115,42 +106,48 @@ document.addEventListener('DOMContentLoaded', () => {
     jsonPayload.textContent = JSON.stringify(payload, null, 2);
   }
 
-  // Event Listeners
+  // Bind Slider Events
   [cpuRange, ramRange, diskRange, spikeRange].forEach(el => {
-    el.addEventListener('input', evaluateInference);
+    if (el) el.addEventListener('input', evaluateInference);
   });
 
-  // Presets
+  // Preset Buttons
   const btnPresetAnomaly = document.getElementById('btnPresetAnomaly');
   const btnPresetNormal = document.getElementById('btnPresetNormal');
 
-  btnPresetAnomaly.addEventListener('click', () => {
-    cpuRange.value = 94.5;
-    ramRange.value = 88.0;
-    diskRange.value = 45.0;
-    spikeRange.value = 42.0;
-    evaluateInference();
-  });
-
-  btnPresetNormal.addEventListener('click', () => {
-    cpuRange.value = 16.5;
-    ramRange.value = 26.0;
-    diskRange.value = 24.0;
-    spikeRange.value = 0.8;
-    evaluateInference();
-  });
-
-  // Copy JSON
-  const btnCopyJson = document.getElementById('btnCopyJson');
-  btnCopyJson.addEventListener('click', () => {
-    navigator.clipboard.writeText(jsonPayload.textContent).then(() => {
-      btnCopyJson.textContent = 'Copied! ✓';
-      setTimeout(() => {
-        btnCopyJson.textContent = 'Copy JSON';
-      }, 2000);
+  if (btnPresetAnomaly) {
+    btnPresetAnomaly.addEventListener('click', () => {
+      cpuRange.value = 94.5;
+      ramRange.value = 88.0;
+      diskRange.value = 45.0;
+      spikeRange.value = 42.0;
+      evaluateInference();
     });
-  });
+  }
 
-  // Initialize on load
+  if (btnPresetNormal) {
+    btnPresetNormal.addEventListener('click', () => {
+      cpuRange.value = 16.5;
+      ramRange.value = 26.0;
+      diskRange.value = 24.0;
+      spikeRange.value = 0.8;
+      evaluateInference();
+    });
+  }
+
+  // Copy JSON Payload
+  const btnCopyJson = document.getElementById('btnCopyJson');
+  if (btnCopyJson) {
+    btnCopyJson.addEventListener('click', () => {
+      navigator.clipboard.writeText(jsonPayload.textContent).then(() => {
+        btnCopyJson.textContent = 'Copied! ✓';
+        setTimeout(() => {
+          btnCopyJson.textContent = 'Copy JSON';
+        }, 2000);
+      });
+    });
+  }
+
+  // Initial execution
   evaluateInference();
 });
