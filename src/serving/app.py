@@ -6,7 +6,7 @@ import json
 import logging
 import time
 from contextlib import asynccontextmanager
-from typing import Any, Optional
+from typing import Optional
 
 import joblib
 from fastapi import FastAPI, HTTPException, Response
@@ -205,5 +205,5 @@ async def metrics():
 
 if __name__ == "__main__":
     import uvicorn
-    config = Config()
-    uvicorn.run(app, host=config.API_HOST, port=config.API_PORT)
+    cfg = Config()
+    uvicorn.run(app, host=cfg.API_HOST, port=cfg.API_PORT)
