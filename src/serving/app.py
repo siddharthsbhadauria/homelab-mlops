@@ -12,7 +12,14 @@ import joblib
 from fastapi import FastAPI, HTTPException, Response
 from fastapi.responses import RedirectResponse
 from pydantic import BaseModel, Field
-from prometheus_client import Counter, Histogram, Gauge, generate_latest, CONTENT_TYPE_LATEST
+from prometheus_client import (
+    Counter,
+    Histogram,
+    Gauge,
+    generate_latest,
+    CONTENT_TYPE_LATEST,
+    REGISTRY
+)
 
 from src.config import Config
 from src.features.feature_engineer import FeatureEngineer
@@ -21,10 +28,18 @@ from src.features.feature_engineer import FeatureEngineer
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
 
-# Prometheus metrics
-PREDICTION_COUNT = Counter("model_predictions_total", "Total number of predictions", ["result"])
-PREDICTION_LATENCY = Histogram("model_prediction_latency_seconds", "Latency of predictions in seconds")
-ANOMALY_SCORE = Gauge("model_anomaly_score", "Anomaly score of the latest prediction")
+# Safe Prometheus metrics instantiation (prevents Duplicated timeseries in test runners)
+def _get_or_create_metric(collector_cls, name, documentation, labelnames=()):
+    try:
+        if labelnames:
+            return collector_cls(name, documentation, labelnames)
+        return collector_cls(name, documentation)
+    except ValueError:
+        return REGISTRY._names_to_collectors.get(name)
+
+PREDICTION_COUNT = _get_or_create_metric(Counter, "model_predictions_total", "Total number of predictions", ["result"])
+PREDICTION_LATENCY = _get_or_create_metric(Histogram, "model_prediction_latency_seconds", "Latency of predictions in seconds")
+ANOMALY_SCORE = _get_or_create_metric(Gauge, "model_anomaly_score", "Anomaly score of the latest prediction")
 
 # Pydantic models
 class SystemMetrics(BaseModel):
@@ -64,14 +79,14 @@ class HealthResponse(BaseModel):
 
 def init_app_state(target_app: FastAPI):
     """Initializes app.state defaults."""
-    config = Config()
-    target_app.state.config = config
+    cfg = Config()
+    target_app.state.config = cfg
     target_app.state.model = None
     target_app.state.metadata = {}
     target_app.state.model_loaded = False
-    target_app.state.feature_engineer = FeatureEngineer(config)
+    target_app.state.feature_engineer = FeatureEngineer(cfg)
 
-    metadata_path = os.path.join(config.MODEL_DIR, "metadata.json")
+    metadata_path = os.path.join(cfg.MODEL_DIR, "metadata.json")
     if os.path.exists(metadata_path):
         try:
             with open(metadata_path, "r", encoding="utf-8") as f:
@@ -80,9 +95,9 @@ def init_app_state(target_app: FastAPI):
             logger.warning(f"Failed to parse metadata: {e}")
 
     candidate_paths = [
-        os.path.join(config.MODEL_DIR, "primary_model.joblib"),
-        os.path.join(config.MODEL_DIR, "isolation_forest.joblib"),
-        os.path.join(config.MODEL_DIR, "local_outlier_factor.joblib"),
+        os.path.join(cfg.MODEL_DIR, "primary_model.joblib"),
+        os.path.join(cfg.MODEL_DIR, "isolation_forest.joblib"),
+        os.path.join(cfg.MODEL_DIR, "local_outlier_factor.joblib"),
     ]
 
     for model_path in candidate_paths:
@@ -179,11 +194,14 @@ async def predict(data: TelemetryInput):
         label = int(model.predict(feature_vector)[0])
         is_anomaly = (label == -1)
 
-        PREDICTION_COUNT.labels(result="anomaly" if is_anomaly else "normal").inc()
-        ANOMALY_SCORE.set(score)
+        if PREDICTION_COUNT:
+            PREDICTION_COUNT.labels(result="anomaly" if is_anomaly else "normal").inc()
+        if ANOMALY_SCORE:
+            ANOMALY_SCORE.set(score)
 
         latency = time.time() - start_time
-        PREDICTION_LATENCY.observe(latency)
+        if PREDICTION_LATENCY:
+            PREDICTION_LATENCY.observe(latency)
 
         return PredictionResponse(
             anomaly=is_anomaly,
