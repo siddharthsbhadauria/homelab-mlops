@@ -6,8 +6,8 @@ import pytest
 import pandas as pd
 import duckdb
 
+from src.config import Config
 from src.features.feature_engineer import FeatureEngineer
-from tests.conftest import FEATURE_COLUMNS
 
 
 def test_extract_features_returns_dataframe(mock_config):
@@ -20,13 +20,13 @@ def test_extract_features_returns_dataframe(mock_config):
 def test_extract_features_no_nulls(mock_config):
     fe = FeatureEngineer(mock_config)
     df = fe.extract_features()
-    assert df[FEATURE_COLUMNS].isnull().sum().sum() == 0
+    assert df[Config.FEATURE_COLUMNS].isnull().sum().sum() == 0
 
 
 def test_extract_features_correct_column_count(mock_config):
     fe = FeatureEngineer(mock_config)
     df = fe.extract_features()
-    for col in FEATURE_COLUMNS:
+    for col in Config.FEATURE_COLUMNS:
         assert col in df.columns
 
 
@@ -62,5 +62,5 @@ def test_compute_single_point_features_returns_dict(mock_config, sample_snapshot
     assert isinstance(features, dict)
     assert "cpu_percent" in features
     assert "hour_of_day" in features
-    for col in FEATURE_COLUMNS:
+    for col in Config.FEATURE_COLUMNS:
         assert col in features

@@ -8,8 +8,8 @@ import numpy as np
 import pytest
 from unittest.mock import patch
 
+from src.config import Config
 from src.training.train import AnomalyTrainer
-from tests.conftest import FEATURE_COLUMNS
 
 
 @patch('src.training.train.mlflow')
@@ -61,7 +61,7 @@ def test_trained_model_can_predict(mock_mlflow, mock_config, sample_features_df)
     results = trainer.train(sample_features_df)
     
     model = joblib.load(results["model_path"])
-    X = sample_features_df[FEATURE_COLUMNS]
+    X = sample_features_df[Config.FEATURE_COLUMNS]
     predictions = model.predict(X)
     
     assert predictions.shape == (len(sample_features_df),)

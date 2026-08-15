@@ -3,6 +3,7 @@ Unit tests for FastAPI model serving and health endpoints.
 """
 from fastapi.testclient import TestClient
 from unittest.mock import patch
+from src.config import Config
 from src.serving.app import app
 
 client = TestClient(app)
@@ -18,8 +19,7 @@ def test_health_endpoint():
 
 @patch('src.features.feature_engineer.FeatureEngineer.compute_single_point_features')
 def test_predict_endpoint_valid_input(mock_compute, sample_snapshot):
-    from tests.conftest import FEATURE_COLUMNS
-    mock_features = {col: 0.0 for col in FEATURE_COLUMNS}
+    mock_features = {col: 0.0 for col in Config.FEATURE_COLUMNS}
     mock_compute.return_value = mock_features
 
     # Mock model in app.state
