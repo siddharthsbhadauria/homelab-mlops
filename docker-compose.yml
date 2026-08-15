@@ -61,13 +61,12 @@ services:
 
   # Prometheus metrics server
   prometheus:
-    image: prom/prometheus:v2.53.0
+    build: ./prometheus
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
       - '--storage.tsdb.path=/prometheus'
       - '--web.enable-lifecycle'
     volumes:
-      - ./prometheus:/etc/prometheus:ro
       - prometheus_data:/prometheus
     ports:
       - "${PROMETHEUS_PORT:-9090}:9090"
@@ -75,10 +74,8 @@ services:
 
   # Grafana dashboards for metrics visualization
   grafana:
-    image: grafana/grafana:11.1.0
+    build: ./grafana
     volumes:
-      - ./grafana/provisioning:/etc/grafana/provisioning:ro
-      - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
       - grafana_data:/var/lib/grafana
     ports:
       - "${GRAFANA_PORT:-3030}:3000"
@@ -86,6 +83,7 @@ services:
       - GF_SECURITY_ADMIN_USER=admin
       - GF_SECURITY_ADMIN_PASSWORD=homelab
       - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH=/var/lib/grafana/dashboards/mlops_dashboard.json
     depends_on:
       - prometheus
     restart: unless-stopped
