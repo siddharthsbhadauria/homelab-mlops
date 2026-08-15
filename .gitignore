@@ -1,0 +1,41 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.env
+venv/
+.venv/
+env/
+.env/
+
+# Data and Artifacts
+data/
+*.duckdb
+*.duckdb.wal
+mlflow/
+mlruns/
+*.pkl
+*.joblib
+
+# Testing and Coverage
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+.nox/
+coverage.xml
+
+# Infrastructure Data
+grafana_data/
+prometheus_data/
+
+# IDEs
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db

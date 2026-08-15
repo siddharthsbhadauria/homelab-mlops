@@ -1,0 +1,90 @@
+version: '3.8'
+
+services:
+  # MLflow tracking server for experiment tracking and model registry
+  mlflow:
+    image: ghcr.io/mlflow/mlflow:v2.16.0
+    command: mlflow server --host 0.0.0.0 --port 5000 --backend-store-uri sqlite:///mlflow/mlflow.db --default-artifact-root /mlflow/artifacts
+    volumes:
+      - mlflow_data:/mlflow
+    ports:
+      - "5000:5000"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+
+  # FastAPI model serving endpoints
+  api:
+    build: .
+    command: python -m uvicorn src.serving.app:app --host 0.0.0.0 --port 8000
+    ports:
+      - "8000:8000"
+    environment:
+      - TELEMETRY_DB_PATH=/data/auto-datapulse/telemetry.duckdb
+      - MODEL_DIR=/data/homelab-mlops/models
+      - MLFLOW_TRACKING_URI=http://mlflow:5000
+    volumes:
+      - ${DATAPULSE_DATA_PATH:-../auto-datapulse/data}:/data/auto-datapulse:ro
+      - mlops_data:/data/homelab-mlops
+    depends_on:
+      - mlflow
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+
+  # Orchestrator for feature engineering, training, and monitoring
+  pipeline:
+    build: .
+    command: python -m src.pipeline
+    environment:
+      - TELEMETRY_DB_PATH=/data/auto-datapulse/telemetry.duckdb
+      - MODEL_DIR=/data/homelab-mlops/models
+      - MLFLOW_TRACKING_URI=http://mlflow:5000
+      - GITHUB_TOKEN=${GITHUB_TOKEN}
+      - GITHUB_REPO=${GITHUB_REPO}
+      - PIPELINE_INTERVAL_SECONDS=${PIPELINE_INTERVAL_SECONDS:-21600}
+    volumes:
+      - ${DATAPULSE_DATA_PATH:-../auto-datapulse/data}:/data/auto-datapulse:ro
+      - mlops_data:/data/homelab-mlops
+    depends_on:
+      - mlflow
+      - api
+    restart: unless-stopped
+
+  # Prometheus metrics server
+  prometheus:
+    image: prom/prometheus:v2.53.0
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    ports:
+      - "9090:9090"
+    restart: unless-stopped
+
+  # Grafana dashboards for metrics visualization
+  grafana:
+    image: grafana/grafana:11.1.0
+    volumes:
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - grafana_data:/var/lib/grafana
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=homelab
+      - GF_USERS_ALLOW_SIGN_UP=false
+    depends_on:
+      - prometheus
+    restart: unless-stopped
+
+volumes:
+  mlops_data:
+  mlflow_data:
+  prometheus_data:
+  grafana_data:
