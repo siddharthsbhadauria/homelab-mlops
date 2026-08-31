@@ -1,10 +1,10 @@
 {
-  "last_updated": "2026-08-31T13:18:13.229833+00:00",
+  "last_updated": "2026-08-31T19:18:15.243529+00:00",
   "model_type": "LocalOutlierFactor",
   "algorithm": "LocalOutlierFactor",
-  "anomaly_rate": 0.04234367306745446,
-  "n_samples_trained": 2031,
+  "anomaly_rate": 0.042335766423357665,
+  "n_samples_trained": 2055,
   "features_count": 18,
-  "mlflow_run_id": "d9c5a006bb384442bba65c6db2a5c3df",
+  "mlflow_run_id": "62aa6b9aab8646ea8ee806cbc5779500",
   "status": "HEALTHY"
 }
