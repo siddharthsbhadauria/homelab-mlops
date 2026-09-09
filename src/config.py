@@ -10,7 +10,13 @@ class Config:
     MODEL_DIR: str = os.getenv("MODEL_DIR", "/data/homelab-mlops/models")
     MLFLOW_TRACKING_URI: str = os.getenv("MLFLOW_TRACKING_URI", f"http://{os.getenv('MLFLOW_HOST', 'mlflow')}:{os.getenv('MLFLOW_PORT', '5000')}")
     EXPERIMENT_NAME: str = "homelab-anomaly-detection"
-    CONTAMINATION: float = float(os.getenv("CONTAMINATION", "0.05"))
+    CONTAMINATION: float = float(os.getenv("CONTAMINATION", "0.01"))
+    ANOMALY_SCORE_THRESHOLD: float = float(os.getenv("ANOMALY_SCORE_THRESHOLD", "-0.10"))
+    CONSECUTIVE_ANOMALIES_REQUIRED: int = int(os.getenv("CONSECUTIVE_ANOMALIES_REQUIRED", "2"))
+    ALERT_COOLDOWN_HOURS: int = int(os.getenv("ALERT_COOLDOWN_HOURS", "4"))
+    RESOURCE_GUARD_CPU_PERCENT: float = float(os.getenv("RESOURCE_GUARD_CPU_PERCENT", "75.0"))
+    RESOURCE_GUARD_RAM_PERCENT: float = float(os.getenv("RESOURCE_GUARD_RAM_PERCENT", "85.0"))
+    RESOURCE_GUARD_DISK_PERCENT: float = float(os.getenv("RESOURCE_GUARD_DISK_PERCENT", "90.0"))
     ROLLING_WINDOW_SHORT: int = 4   # 4 samples = 1 hour at 15-min intervals
     ROLLING_WINDOW_LONG: int = 24   # 24 samples = 6 hours
     MIN_SAMPLES_FOR_TRAINING: int = 96  # 24 hours of data minimum

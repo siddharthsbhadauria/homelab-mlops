@@ -23,6 +23,49 @@ class AnomalyMonitor:
     def __init__(self, config: Optional[Config] = None):
         self.config = config or Config()
         self.api_url = self.config.API_URL
+        self.consecutive_anomalies: int = 0
+        self.last_alert_time: float = 0.0
+
+    def is_actionable_anomaly(self, prediction: Dict[str, Any], snapshot: Dict[str, Any]) -> bool:
+        """
+        Determines whether an inference result is a true actionable anomaly.
+        Applies score margin threshold and safe resource guardrails to eliminate false positives.
+        """
+        is_flagged = prediction.get("anomaly", False) or prediction.get("is_anomaly", False)
+        if not is_flagged:
+            return False
+
+        score = float(prediction.get("anomaly_score", 0.0))
+
+        # 1. Score threshold filter: Ignore marginal boundary points (e.g. -0.01)
+        if score > self.config.ANOMALY_SCORE_THRESHOLD:
+            logger.info(
+                f"Model flagged anomaly but score {score:.4f} is above threshold {self.config.ANOMALY_SCORE_THRESHOLD:.4f}. "
+                "Classifying as normal operational variance."
+            )
+            return False
+
+        # 2. Resource safety guardrails: Don't panic if resource utilization is safely low
+        sys_data = snapshot.get("system", {}) if isinstance(snapshot.get("system"), dict) else {}
+        cpu = float(sys_data.get("cpu_percent", snapshot.get("cpu_percent", 0.0)))
+        ram = float(sys_data.get("ram_percent", snapshot.get("ram_percent", 0.0)))
+        disk = float(sys_data.get("disk_percent", snapshot.get("disk_percent", 0.0)))
+
+        is_resource_safe = (
+            cpu < self.config.RESOURCE_GUARD_CPU_PERCENT
+            and ram < self.config.RESOURCE_GUARD_RAM_PERCENT
+            and disk < self.config.RESOURCE_GUARD_DISK_PERCENT
+        )
+
+        # If system resources are within safe limits and anomaly is not severe (score > -0.25), suppress alert
+        if is_resource_safe and score > -0.25:
+            logger.info(
+                f"System resources healthy (CPU: {cpu}%, RAM: {ram}%, Disk: {disk}%) and score {score:.4f} is moderate. "
+                "Suppressing false alert."
+            )
+            return False
+
+        return True
 
     def run_check(self) -> Dict[str, Any]:
         """Runs a single telemetry evaluation pass against the serving API."""
@@ -82,9 +125,21 @@ class AnomalyMonitor:
                 prediction = response.json()
                 logger.info(f"Prediction received: {prediction}")
 
-                if prediction.get("anomaly", False) or prediction.get("is_anomaly", False):
-                    result["anomaly_detected"] = True
-                    self.create_github_issue(prediction, snapshot)
+                if self.is_actionable_anomaly(prediction, snapshot):
+                    self.consecutive_anomalies += 1
+                    logger.warning(
+                        f"Actionable anomaly detected ({self.consecutive_anomalies}/{self.config.CONSECUTIVE_ANOMALIES_REQUIRED} "
+                        f"consecutive checks, score: {prediction.get('anomaly_score')})"
+                    )
+
+                    if self.consecutive_anomalies >= self.config.CONSECUTIVE_ANOMALIES_REQUIRED:
+                        result["anomaly_detected"] = True
+                        self.create_or_update_github_issue(prediction, snapshot)
+                else:
+                    if self.consecutive_anomalies > 0:
+                        logger.info("Telemetry returned to normal baseline. Resetting consecutive anomaly counter.")
+                    self.consecutive_anomalies = 0
+
             else:
                 logger.error(f"Serving API returned status {response.status_code}: {response.text}")
                 result["status"] = "api_error"
@@ -96,8 +151,8 @@ class AnomalyMonitor:
 
         return result
 
-    def create_github_issue(self, prediction: Dict[str, Any], snapshot: Dict[str, Any]):
-        """Dispatches an incident alert issue to GitHub via REST API."""
+    def create_or_update_github_issue(self, prediction: Dict[str, Any], snapshot: Dict[str, Any]):
+        """Dispatches or updates an incident alert issue on GitHub with deduplication and cooldown."""
         token = self.config.GITHUB_TOKEN
         repo = self.config.GITHUB_REPO
 
@@ -106,34 +161,63 @@ class AnomalyMonitor:
             return
 
         timestamp = prediction.get("timestamp", "unknown")
-        title = f"🚨 Homelab Anomaly Detected — {timestamp}"
-
         headers = {
             "Authorization": f"Bearer {token}",
-            "Accept": "application/vnd.github.v3+json"
+            "Accept": "application/vnd.github.v3+json",
+            "User-Agent": "Homelab-Anomaly-Monitor"
         }
 
-        # Prevent duplicate issues
+        # Check for active open incident issues to avoid duplicate spam
+        existing_issue_id = None
         try:
-            search_url = f"https://api.github.com/repos/{repo}/issues?state=open"
+            search_url = f"https://api.github.com/repos/{repo}/issues?state=open&labels=automated-alert"
             issues_resp = requests.get(search_url, headers=headers, timeout=10)
             if issues_resp.status_code == 200:
                 open_issues = issues_resp.json()
-                if any(issue.get("title") == title for issue in open_issues):
-                    logger.info("GitHub Issue for this incident already exists, skipping duplicate.")
-                    return
+                if open_issues:
+                    existing_issue_id = open_issues[0].get("number")
         except Exception as e:
-            logger.warning(f"Failed to check duplicate GitHub issues: {e}")
+            logger.warning(f"Failed to query existing open issues: {e}")
 
+        # If an open incident already exists, append a comment timeline update instead of creating a new issue
+        if existing_issue_id:
+            now = time.time()
+            cooldown_seconds = self.config.ALERT_COOLDOWN_HOURS * 3600
+            if (now - self.last_alert_time) < 1800:  # Comment max once every 30 mins
+                logger.info(f"Open incident #{existing_issue_id} exists. Update suppressed within comment interval.")
+                return
+
+            comment_body = f"""### ⏱️ Incident Update — `{timestamp}`
+- **Consecutive Anomalous Checks**: `{self.consecutive_anomalies}`
+- **Anomaly Score**: `{prediction.get('anomaly_score', 'N/A')}`
+- **Model**: `{prediction.get('model_type', 'IsolationForest')}`
+
+```json
+{json.dumps(snapshot, indent=2)}
+```
+"""
+            try:
+                comment_url = f"https://api.github.com/repos/{repo}/issues/{existing_issue_id}/comments"
+                c_resp = requests.post(comment_url, headers=headers, json={"body": comment_body}, timeout=10)
+                if c_resp.status_code in (200, 201):
+                    logger.info(f"Appended status update to existing incident issue #{existing_issue_id}")
+                    self.last_alert_time = now
+            except Exception as e:
+                logger.error(f"Failed to comment on existing incident #{existing_issue_id}: {e}")
+            return
+
+        # Otherwise create a new incident issue
+        title = f"🚨 Homelab Incident Alert — Anomaly Detected ({timestamp})"
         body = f"""# 🚨 Automated Homelab Incident Alert
 
-An operational anomaly was detected on the **UGREEN NAS** cluster by the `{prediction.get('model_type', 'IsolationForest')}` model.
+An operational anomaly was confirmed on the **UGREEN NAS** cluster by the `{prediction.get('model_type', 'IsolationForest')}` model after **{self.consecutive_anomalies} consecutive intervals**.
 
 ---
 
 ### 📊 Model Inference
-- **Anomaly Status**: `FLAGGED ⚠️`
-- **Anomaly Score**: `{prediction.get('anomaly_score', 'N/A')}`
+- **Anomaly Status**: `CONFIRMED ⚠️`
+- **Anomaly Score**: `{prediction.get('anomaly_score', 'N/A')}` (Threshold: `{self.config.ANOMALY_SCORE_THRESHOLD}`)
+- **Consecutive Detections**: `{self.consecutive_anomalies}`
 - **Model Version**: `{prediction.get('model_version', 'local-v1')}`
 - **Event Timestamp**: `{timestamp}`
 
@@ -148,7 +232,7 @@ An operational anomaly was detected on the **UGREEN NAS** cluster by the `{predi
 
 ### 🛠️ Remediation Playbook
 1. Check running Docker containers (`docker ps`) for runaway processes.
-2. Review disk I/O spikes or memory leaks in Grafana (`http://<nas-ip>:3000`).
+2. Review disk I/O spikes or memory leaks in Grafana (`http://<nas-ip>:3030`).
 3. Verify temperatures and fan speeds via UGREEN control dashboard.
 """
 
@@ -162,6 +246,7 @@ An operational anomaly was detected on the **UGREEN NAS** cluster by the `{predi
             url = f"https://api.github.com/repos/{repo}/issues"
             resp = requests.post(url, headers=headers, json=issue_data, timeout=10)
             if resp.status_code in (200, 201):
+                self.last_alert_time = time.time()
                 logger.info(f"Successfully created GitHub issue: {resp.json().get('html_url')}")
             else:
                 logger.error(f"Failed to create GitHub issue: {resp.status_code} - {resp.text}")
