@@ -25,6 +25,9 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
+      - name: Build model history from daily reports
+        run: python3 scripts/build_history.py
+
       - name: Setup Pages
         uses: actions/configure-pages@v5
 

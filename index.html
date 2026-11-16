@@ -1,274 +1,154 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="dark">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Homelab // MLOps — Autonomous Telemetry & Anomaly Intelligence Platform</title>
-  <meta name="description" content="Self-hosted production MLOps & real-time telemetry anomaly detection platform on UGREEN NAS / Docker with DuckDB, MLflow, FastAPI, and Prometheus.">
+  <title>Homelab Anomaly Detection · homelab-mlops</title>
+  <meta name="description" content="A NAS that watches its own telemetry for anomalies: DuckDB features, scikit-learn models retrained every six hours, MLflow, FastAPI, Prometheus and GitHub Issues alerts.">
   <meta name="author" content="Siddharth Singh Bhadauria">
+  <meta property="og:title" content="Homelab Anomaly Detection · homelab-mlops">
+  <meta property="og:description" content="Daily model reports from a self-hosted anomaly-detection pipeline on a home NAS.">
+  <meta name="color-scheme" content="light dark">
 
-  <!-- Open Graph -->
-  <meta property="og:title" content="Homelab // MLOps: Anomaly Intelligence Platform">
-  <meta property="og:description" content="Self-hosted MLOps platform on UGREEN NAS with DuckDB feature store, MLflow tracking, and FastAPI serving.">
+  <script>
+    try {
+      const t = localStorage.getItem('theme');
+      if (t === 'light' || t === 'dark') document.documentElement.dataset.theme = t;
+    } catch (e) {}
+    if (!matchMedia('(prefers-reduced-motion: reduce)').matches) document.documentElement.classList.add('motion');
+  </script>
 
-  <!-- Universal JetBrains Mono Font -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,400..800;1,400..800&display=swap" rel="stylesheet">
-
-  <link rel="stylesheet" href="style.css?v=3.0.0">
-
-  <!-- High-Tech Dynamic SVG Waveform Favicon -->
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 rx=%2222%22 fill=%22%23040711%22/><path d=%22M15 50 L32 50 L42 22 L58 78 L68 50 L85 50%22 fill=%22none%22 stroke=%22%2300f0ff%22 stroke-width=%228%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22/></svg>">
+  <link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..500&family=Public+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css?v=2.0.0">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 32 32%22><rect width=%2232%22 height=%2232%22 rx=%226%22 fill=%22%23a8461f%22/><text x=%2216%22 y=%2223%22 font-family=%22Georgia,serif%22 font-size=%2220%22 fill=%22%23fff%22 text-anchor=%22middle%22>H</text></svg>">
 </head>
 <body>
-  <!-- Ambient background glow -->
-  <div class="glow-bg glow-purple"></div>
-  <div class="glow-bg glow-cyan"></div>
+  <a class="skip-link" href="#main">Skip to content</a>
 
-  <!-- Header / Navigation -->
-  <header class="navbar">
-    <div class="container nav-content">
-      <a href="#" class="brand" title="Homelab // MLOps">
-        <div class="brand-icon">
-          <!-- Cyber Pulse Waveform SVG Emblem -->
-          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-            <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
-          </svg>
-        </div>
-        <div class="brand-text">
-          <span class="brand-title">HOMELAB // MLOPS</span>
-          <span class="brand-tag">Autonomous Telemetry Intelligence</span>
-        </div>
-      </a>
-
-      <div class="nav-actions">
-        <button id="themeToggle" class="btn-icon-theme" title="Toggle Theme" aria-label="Toggle Theme">
-          <span class="theme-icon-dark">🌙</span>
-          <span class="theme-icon-light">☀️</span>
+  <header class="site-header">
+    <div class="wrap header-inner">
+      <a href="#top" class="wordmark">homelab-mlops</a>
+      <nav class="site-nav" aria-label="Sections">
+        <a href="#history">History</a>
+        <a href="#pipeline">Pipeline</a>
+        <a href="#stack">Stack</a>
+      </nav>
+      <div class="header-actions">
+        <button id="themeToggle" class="icon-btn" type="button" aria-label="Switch colour theme">
+          <svg class="icon-sun" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+          <svg class="icon-moon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z"/></svg>
         </button>
-
-        <span class="status-badge pulse-dot">
-          <span class="dot"></span> Self-Hosted NAS Daemon Active
-        </span>
-
-        <a href="https://github.com/siddharthsbhadauria/homelab-mlops" target="_blank" rel="noopener noreferrer" class="btn btn-github">
-          <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
-          <span>GitHub</span>
-        </a>
+        <a href="https://github.com/siddharthsbhadauria/homelab-mlops" class="btn btn-solid" rel="noopener">Source</a>
       </div>
     </div>
   </header>
 
-  <!-- Hero Section -->
-  <main class="container">
-    <section class="hero-section">
-      <div class="hero-badge">
-        <span class="sparkle">📡</span> 24/7 Telemetry Anomaly Detection · UGREEN NAS
-      </div>
-      <h1 class="hero-title">
-        Autonomous Telemetry Intelligence <br>
-        <span class="gradient-text">& Real-Time Anomaly Engine</span>
-      </h1>
-      <p class="hero-subtitle">
-        Continuous DuckDB SQL feature store, dual-model benchmarking with MLflow experiment tracking, sub-10ms FastAPI serving, and automated GitHub Issues incident alerting on UGREEN NAS hardware.
+  <main id="main">
+    <section id="top" class="hero wrap">
+      <p class="eyebrow"><span id="updated">Daily reports</span> · UGREEN DXP4800 NAS · <a href="https://siddharthsbhadauria.github.io/portfolio/">by Siddharth Bhadauria</a></p>
+      <h1 class="hero-title">A home server that <em>watches itself</em> for trouble</h1>
+      <p class="lede">
+        My NAS records its own CPU, memory and disk every 15 minutes. This project turns that history
+        into 18 features in DuckDB, retrains two anomaly detectors every six hours, keeps the better one,
+        and opens a GitHub issue when the live readings look wrong. Each day it publishes a short model report;
+        the charts below are built from those reports.
       </p>
+    </section>
 
-      <!-- Stats Grid -->
-      <div class="stats-grid">
-        <div class="stat-card">
-          <span class="stat-number">IsolationForest</span>
-          <span class="stat-label">Primary Active Model</span>
-        </div>
-        <div class="stat-card">
-          <span class="stat-number">18 Features</span>
-          <span class="stat-label">Sliding Window Feature Store</span>
-        </div>
-        <div class="stat-card">
-          <span class="stat-number">&lt; 4.2 ms</span>
-          <span class="stat-label">FastAPI Inference Latency</span>
-        </div>
-        <div class="stat-card">
-          <span class="stat-number">Prometheus + Grafana</span>
-          <span class="stat-label">Observability Stack</span>
-        </div>
+    <section class="outcomes" aria-labelledby="band-h">
+      <div class="wrap">
+        <h2 id="band-h" class="outcomes-title">From the latest report</h2>
+        <dl class="outcomes-grid" id="headline"></dl>
       </div>
     </section>
 
-    <!-- Interactive Simulator -->
-    <section class="simulator-card">
-      <div class="card-header">
-        <div>
-          <h2>🧪 Interactive Telemetry Anomaly Simulator</h2>
-          <p class="section-desc">Adjust the system load sliders to simulate live homelab telemetry and observe real-time classification, anomaly scores, and feature vectors.</p>
+    <section id="history" class="section wrap" aria-labelledby="hist-h">
+      <header class="section-head reveal">
+        <p class="section-num">01</p>
+        <h2 id="hist-h">Training history</h2>
+        <p class="section-note">One point per daily report. Each chart has its own scale.</p>
+      </header>
+      <div class="multiples reveal">
+        <div class="mini">
+          <h3>Rows of telemetry the model trained on</h3>
+          <p class="mini-sub">Grows by about 96 a day: one reading every 15 minutes.</p>
+          <div class="mini-chart" id="chartSamples"></div>
         </div>
-        <div class="preset-actions">
-          <button id="btnPresetAnomaly" class="btn-preset">Simulate CPU Spike 🚨</button>
-          <button id="btnPresetNormal" class="btn-preset-alt">Simulate Normal State ✅</button>
-        </div>
-      </div>
-
-      <div class="simulator-grid">
-        <div class="controls-pane">
-          <div class="slider-group">
-            <div class="slider-header">
-              <label for="cpuRange">CPU Utilization</label>
-              <span class="slider-val" id="cpuVal">18.5%</span>
-            </div>
-            <input type="range" id="cpuRange" min="0" max="100" step="0.5" value="18.5">
-          </div>
-
-          <div class="slider-group">
-            <div class="slider-header">
-              <label for="ramRange">RAM Utilization</label>
-              <span class="slider-val" id="ramVal">28.0%</span>
-            </div>
-            <input type="range" id="ramRange" min="0" max="100" step="0.5" value="28.0">
-          </div>
-
-          <div class="slider-group">
-            <div class="slider-header">
-              <label for="diskRange">Disk Capacity Usage</label>
-              <span class="slider-val" id="diskVal">24.0%</span>
-            </div>
-            <input type="range" id="diskRange" min="0" max="100" step="0.5" value="24.0">
-          </div>
-
-          <div class="slider-group">
-            <div class="slider-header">
-              <label for="spikeRange">CPU Rate of Change (Δ 15m)</label>
-              <span class="slider-val" id="spikeVal">+1.2%</span>
-            </div>
-            <input type="range" id="spikeRange" min="-50" max="50" step="0.5" value="1.2">
-          </div>
-        </div>
-
-        <div class="inference-pane">
-          <div class="inference-status" id="inferenceBadge">
-            <span class="status-icon" id="statusIcon">🟢</span>
-            <div>
-              <div class="status-title" id="statusTitle">OPERATIONAL HEALTHY</div>
-              <div class="status-sub" id="statusSub">Inference evaluated within nominal bounds (5% contamination envelope).</div>
-            </div>
-          </div>
-
-          <div class="score-display">
-            <div class="score-row">
-              <span>Decision Score:</span>
-              <strong id="decisionScore">+0.1428</strong>
-            </div>
-            <div class="progress-bar-bg">
-              <div class="progress-bar-fill" id="scoreBar" style="width: 75%;"></div>
-            </div>
-            <div class="score-legend">
-              <span>-0.5 (Severe Anomaly)</span>
-              <span>0.0 (Threshold)</span>
-              <span>+0.5 (Nominal)</span>
-            </div>
-          </div>
-
-          <!-- Terminal Window Component -->
-          <div class="terminal-window">
-            <div class="terminal-header">
-              <div class="terminal-dots">
-                <span class="dot-red"></span>
-                <span class="dot-yellow"></span>
-                <span class="dot-green"></span>
-              </div>
-              <div class="terminal-title">REST /predict API payload</div>
-              <div class="code-copy" id="btnCopyJson">Copy JSON</div>
-            </div>
-            <pre class="terminal-body"><code id="jsonPayload">{
-  "timestamp": "2026-08-15T22:15:00Z",
-  "system": {
-    "cpu_percent": 18.5,
-    "ram_percent": 28.0,
-    "disk_percent": 24.0
-  },
-  "anomaly": false,
-  "anomaly_score": 0.1428
-}</code></pre>
-          </div>
+        <div class="mini">
+          <h3>Share of rows flagged as anomalous</h3>
+          <p class="mini-sub">What the winning model calls unusual in its own training data.</p>
+          <div class="mini-chart" id="chartRate"></div>
         </div>
       </div>
+      <p class="chart-cap" id="historyCap"></p>
     </section>
 
-    <!-- Matrix Details Grid -->
-    <section class="grid-2col">
-      <div class="matrix-card">
-        <h3>📐 Feature Store Matrix (18 Features)</h3>
-        <p class="section-desc">Computed directly inside DuckDB via OLAP SQL window functions before Parquet export:</p>
-        <div class="features-list">
-          <div class="feature-tag"><span>cpu_percent</span></div>
-          <div class="feature-tag"><span>ram_percent</span></div>
-          <div class="feature-tag"><span>disk_percent</span></div>
-          <div class="feature-tag"><span>cpu_rolling_mean_1h</span></div>
-          <div class="feature-tag"><span>cpu_rolling_std_1h</span></div>
-          <div class="feature-tag"><span>ram_rolling_mean_1h</span></div>
-          <div class="feature-tag"><span>ram_rolling_std_1h</span></div>
-          <div class="feature-tag"><span>disk_rolling_mean_1h</span></div>
-          <div class="feature-tag"><span>disk_rolling_std_1h</span></div>
-          <div class="feature-tag"><span>cpu_rolling_mean_6h</span></div>
-          <div class="feature-tag"><span>cpu_rolling_std_6h</span></div>
-          <div class="feature-tag"><span>ram_rolling_mean_6h</span></div>
-          <div class="feature-tag"><span>ram_rolling_std_6h</span></div>
-          <div class="feature-tag"><span>cpu_rate_of_change</span></div>
-          <div class="feature-tag"><span>ram_rate_of_change</span></div>
-          <div class="feature-tag"><span>disk_rate_of_change</span></div>
-          <div class="feature-tag"><span>hour_of_day</span></div>
-          <div class="feature-tag"><span>day_of_week</span></div>
-        </div>
-      </div>
-
-      <div class="matrix-card">
-        <h3>🐳 Containerized Stack on NAS</h3>
-        <div class="stack-rows">
-          <div class="stack-item">
-            <span class="service-name">FastAPI Engine</span>
-            <span class="service-desc">Sub-10ms online prediction & Prometheus metrics</span>
-            <span class="port-tag">:8000</span>
+    <section id="pipeline" class="section wrap" aria-labelledby="pipe-h">
+      <header class="section-head reveal">
+        <p class="section-num">02</p>
+        <h2 id="pipe-h">Pipeline</h2>
+        <p class="section-note">Five steps, all running in Docker on the NAS. Nothing leaves the house except the daily report and any alert.</p>
+      </header>
+      <ol class="steps">
+        <li>
+          <h3>Collect<small>auto-datapulse · every 15 min</small></h3>
+          <p>A sister project samples host and container metrics and appends them to <code>telemetry.duckdb</code>.</p>
+        </li>
+        <li>
+          <h3>Build features<small>DuckDB SQL window functions</small></h3>
+          <div>
+            <p>Rolling means and standard deviations over one and six hours, rates of change, and time of day.</p>
+            <p class="features" id="featureList">cpu_percent · ram_percent · disk_percent · cpu/ram/disk_rolling_mean_1h · cpu/ram/disk_rolling_std_1h · cpu/ram_rolling_mean_6h · cpu/ram_rolling_std_6h · cpu/ram/disk_rate_of_change · hour_of_day · day_of_week</p>
           </div>
-          <div class="stack-item">
-            <span class="service-name">MLflow Registry</span>
-            <span class="service-desc">Experiment tracking & model artifact store</span>
-            <span class="port-tag">:5000</span>
-          </div>
-          <div class="stack-item">
-            <span class="service-name">Prometheus</span>
-            <span class="service-desc">Time-series scraper for inference latency</span>
-            <span class="port-tag">:9090</span>
-          </div>
-          <div class="stack-item">
-            <span class="service-name">Grafana</span>
-            <span class="service-desc">Live p50/p95/p99 latency & anomaly dashboards</span>
-            <span class="port-tag">:3000</span>
-          </div>
-          <div class="stack-item">
-            <span class="service-name">Pipeline Daemon</span>
-            <span class="service-desc">Continuous 6h training & 15m incident scanner</span>
-            <span class="port-tag">Background</span>
-          </div>
-        </div>
-      </div>
+        </li>
+        <li>
+          <h3>Train and pick<small>scikit-learn · MLflow · every 6 h</small></h3>
+          <p>Isolation Forest and Local Outlier Factor are both trained with 1% contamination. Each run is logged to MLflow and the better model is saved for serving.</p>
+        </li>
+        <li>
+          <h3>Score live readings<small>FastAPI <code>/predict</code> · Prometheus</small></h3>
+          <p>Every 15 minutes the monitor sends the newest reading to the API. Latency and predictions are exported to Prometheus and drawn in Grafana.</p>
+        </li>
+        <li>
+          <h3>Alert<small>GitHub Issues API</small></h3>
+          <p>Two anomalous readings in a row open an issue labelled <code>automated-alert</code>. Later hits comment on the open issue instead of opening new ones, with a four-hour cooldown.</p>
+        </li>
+      </ol>
     </section>
 
-    <!-- Footer -->
-    <footer class="footer">
-      <div>
-        <span>Built by <strong>Siddharth Singh Bhadauria</strong> · Homelab // MLOps</span>
+    <section id="stack" class="section wrap" aria-labelledby="stack-h">
+      <header class="section-head reveal">
+        <p class="section-num">03</p>
+        <h2 id="stack-h">Stack</h2>
+        <p class="section-note">One <code>docker-compose.yml</code>, managed in Portainer.</p>
+      </header>
+      <div class="table-scroll">
+        <table class="data">
+          <thead><tr><th scope="col">Service</th><th scope="col">What it does</th><th scope="col">Port</th></tr></thead>
+          <tbody>
+            <tr><td>Pipeline daemon</td><td>Retrains every 6 hours, scans for anomalies every 15 minutes</td><td class="mono">background</td></tr>
+            <tr><td>FastAPI</td><td>Serves predictions and a Prometheus metrics endpoint</td><td class="mono">:8000</td></tr>
+            <tr><td>MLflow</td><td>Experiment runs and model artefacts</td><td class="mono">:5000</td></tr>
+            <tr><td>Prometheus</td><td>Scrapes inference latency and anomaly counts</td><td class="mono">:9090</td></tr>
+            <tr><td>Grafana</td><td>Latency percentiles and anomaly dashboards</td><td class="mono">:3000</td></tr>
+          </tbody>
+        </table>
       </div>
-      <div class="footer-links">
-        <a href="https://github.com/siddharthsbhadauria/homelab-mlops" target="_blank" rel="noopener noreferrer">GitHub Repository</a>
-        <a href="https://github.com/siddharthsbhadauria/auto-datapulse" target="_blank" rel="noopener noreferrer">auto-datapulse Integration</a>
-      </div>
-    </footer>
+    </section>
   </main>
 
-  <!-- Toast Notification Container -->
-  <div id="toast" class="toast">
-    <span id="toastMessage"></span>
-  </div>
+  <footer class="site-footer">
+    <div class="wrap footer-inner">
+      <span>Built by <a href="https://siddharthsbhadauria.github.io/portfolio/">Siddharth Singh Bhadauria</a>, London</span>
+      <span><a href="https://github.com/siddharthsbhadauria/homelab-mlops" rel="noopener">Source</a> · <a href="https://github.com/siddharthsbhadauria/auto-datapulse" rel="noopener">auto-datapulse</a></span>
+    </div>
+  </footer>
 
-  <script src="app.js"></script>
+  <div id="tip" class="tip" role="tooltip" hidden></div>
+
+  <script src="site/model_history.js"></script>
+  <script src="app.js?v=2.0.0"></script>
 </body>
 </html>
