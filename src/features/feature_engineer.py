@@ -43,7 +43,7 @@ class FeatureEngineer:
 
             query = f"""
             WITH base AS (
-                SELECT 
+                SELECT
                     timestamp,
                     CAST(cpu_percent AS DOUBLE) as cpu_percent,
                     CAST(ram_percent AS DOUBLE) as ram_percent,
@@ -51,7 +51,7 @@ class FeatureEngineer:
                 FROM telemetry_snapshots
                 ORDER BY timestamp ASC
             )
-            SELECT 
+            SELECT
                 timestamp,
                 cpu_percent,
                 ram_percent,
@@ -62,20 +62,20 @@ class FeatureEngineer:
                 COALESCE(STDDEV_POP(ram_percent) OVER w_1h, 0.0) AS ram_rolling_std_1h,
                 AVG(disk_percent) OVER w_1h AS disk_rolling_mean_1h,
                 COALESCE(STDDEV_POP(disk_percent) OVER w_1h, 0.0) AS disk_rolling_std_1h,
-                
+
                 AVG(cpu_percent) OVER w_6h AS cpu_rolling_mean_6h,
                 COALESCE(STDDEV_POP(cpu_percent) OVER w_6h, 0.0) AS cpu_rolling_std_6h,
                 AVG(ram_percent) OVER w_6h AS ram_rolling_mean_6h,
                 COALESCE(STDDEV_POP(ram_percent) OVER w_6h, 0.0) AS ram_rolling_std_6h,
-                
+
                 COALESCE(cpu_percent - LAG(cpu_percent, 1) OVER (ORDER BY timestamp ASC), 0.0) AS cpu_rate_of_change,
                 COALESCE(ram_percent - LAG(ram_percent, 1) OVER (ORDER BY timestamp ASC), 0.0) AS ram_rate_of_change,
                 COALESCE(disk_percent - LAG(disk_percent, 1) OVER (ORDER BY timestamp ASC), 0.0) AS disk_rate_of_change,
-                
+
                 EXTRACT(HOUR FROM CAST(timestamp AS TIMESTAMP)) AS hour_of_day,
                 EXTRACT(DOW FROM CAST(timestamp AS TIMESTAMP)) AS day_of_week
             FROM base
-            WINDOW 
+            WINDOW
                 w_1h AS (ORDER BY timestamp ASC ROWS BETWEEN {max(0, self.config.ROLLING_WINDOW_SHORT - 1)} PRECEDING AND CURRENT ROW),
                 w_6h AS (ORDER BY timestamp ASC ROWS BETWEEN {max(0, self.config.ROLLING_WINDOW_LONG - 1)} PRECEDING AND CURRENT ROW)
             """
@@ -131,7 +131,7 @@ class FeatureEngineer:
             try:
                 conn = duckdb.connect(self.config.TELEMETRY_DB_PATH, read_only=True)
                 query = f"""
-                    SELECT 
+                    SELECT
                         CAST(cpu_percent AS DOUBLE) as cpu_percent,
                         CAST(ram_percent AS DOUBLE) as ram_percent,
                         CAST(disk_percent AS DOUBLE) as disk_percent

@@ -21,13 +21,13 @@ class Config:
     ROLLING_WINDOW_LONG: int = 24   # 24 samples = 6 hours
     MIN_SAMPLES_FOR_TRAINING: int = 96  # 24 hours of data minimum
     FEATURE_COLUMNS: List[str] = [
-        "cpu_percent", "ram_percent", "disk_percent", 
-        "cpu_rolling_mean_1h", "cpu_rolling_std_1h", 
-        "ram_rolling_mean_1h", "ram_rolling_std_1h", 
-        "disk_rolling_mean_1h", "disk_rolling_std_1h", 
-        "cpu_rolling_mean_6h", "cpu_rolling_std_6h", 
-        "ram_rolling_mean_6h", "ram_rolling_std_6h", 
-        "cpu_rate_of_change", "ram_rate_of_change", "disk_rate_of_change", 
+        "cpu_percent", "ram_percent", "disk_percent",
+        "cpu_rolling_mean_1h", "cpu_rolling_std_1h",
+        "ram_rolling_mean_1h", "ram_rolling_std_1h",
+        "disk_rolling_mean_1h", "disk_rolling_std_1h",
+        "cpu_rolling_mean_6h", "cpu_rolling_std_6h",
+        "ram_rolling_mean_6h", "ram_rolling_std_6h",
+        "cpu_rate_of_change", "ram_rate_of_change", "disk_rate_of_change",
         "hour_of_day", "day_of_week"
     ]
     API_HOST: str = os.getenv("API_HOST", "0.0.0.0")

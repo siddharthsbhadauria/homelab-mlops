@@ -6,7 +6,7 @@ import os
 import json
 import time
 import logging
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Optional, Dict, Any, Union
 
 import pandas as pd
@@ -127,7 +127,7 @@ class AnomalyTrainer:
         metadata = {
             "model_type": best_model_name,
             "algorithm": best_model_name,
-            "trained_at": datetime.utcnow().isoformat() + "Z",
+            "trained_at": datetime.now(UTC).isoformat().replace("+00:00", "Z"),
             "n_samples": int(len(X)),
             "features": list(self.config.FEATURE_COLUMNS),
             "feature_columns": list(self.config.FEATURE_COLUMNS),

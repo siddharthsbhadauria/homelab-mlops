@@ -26,7 +26,7 @@ jobs:
           pip install -r requirements.txt
           pip install pytest httpx ruff
       - name: Code Quality & Linting
-        run: ruff check src/ tests/ --exit-zero
+        run: ruff check .
       - name: Run Pytest Suite
         run: pytest tests/ -v
 

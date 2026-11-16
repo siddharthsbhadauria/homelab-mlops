@@ -13,13 +13,13 @@ from sklearn.ensemble import IsolationForest
 from src.config import Config
 
 FEATURE_COLUMNS = [
-    "cpu_percent", "ram_percent", "disk_percent", 
-    "cpu_rolling_mean_1h", "cpu_rolling_std_1h", 
-    "ram_rolling_mean_1h", "ram_rolling_std_1h", 
-    "disk_rolling_mean_1h", "disk_rolling_std_1h", 
-    "cpu_rolling_mean_6h", "cpu_rolling_std_6h", 
-    "ram_rolling_mean_6h", "ram_rolling_std_6h", 
-    "cpu_rate_of_change", "ram_rate_of_change", "disk_rate_of_change", 
+    "cpu_percent", "ram_percent", "disk_percent",
+    "cpu_rolling_mean_1h", "cpu_rolling_std_1h",
+    "ram_rolling_mean_1h", "ram_rolling_std_1h",
+    "disk_rolling_mean_1h", "disk_rolling_std_1h",
+    "cpu_rolling_mean_6h", "cpu_rolling_std_6h",
+    "ram_rolling_mean_6h", "ram_rolling_std_6h",
+    "cpu_rate_of_change", "ram_rate_of_change", "disk_rate_of_change",
     "hour_of_day", "day_of_week"
 ]
 
@@ -87,13 +87,13 @@ def tmp_duckdb(tmp_path):
             status VARCHAR
         )
     ''')
-    
+
     # Insert 200 rows of valid synthetic data
     for i in range(200):
         ts = f"2026-08-15T{i%24:02d}:{i%60:02d}:00Z"
         conn.execute(f'''
             INSERT INTO telemetry_snapshots VALUES (
-                '{ts}', {np.random.uniform(5, 80)}, 16.0, 32.0, {np.random.uniform(20, 60)}, 
+                '{ts}', {np.random.uniform(5, 80)}, 16.0, 32.0, {np.random.uniform(20, 60)},
                 500.0, 1000.0, {np.random.uniform(15, 40)}, 'HEALTHY'
             )
         ''')
@@ -104,15 +104,15 @@ def tmp_duckdb(tmp_path):
 def tmp_model_dir(tmp_path, sample_features_df):
     model_dir = tmp_path / "models"
     model_dir.mkdir(parents=True, exist_ok=True)
-    
+
     # Train and dump quick models
     clf = IsolationForest(n_estimators=10, contamination=0.05, random_state=42)
     X = sample_features_df[FEATURE_COLUMNS]
     clf.fit(X)
-    
+
     primary_path = model_dir / "primary_model.joblib"
     joblib.dump(clf, primary_path)
-    
+
     metadata = {
         "model_type": "IsolationForest",
         "algorithm": "IsolationForest",
@@ -124,7 +124,7 @@ def tmp_model_dir(tmp_path, sample_features_df):
     }
     with open(model_dir / "metadata.json", "w", encoding="utf-8") as f:
         json.dump(metadata, f)
-        
+
     return str(model_dir)
 
 @pytest.fixture

@@ -40,10 +40,10 @@ def test_extract_features_empty_db_raises(mock_config, tmp_path):
         )
     ''')
     conn.close()
-    
+
     mock_config.TELEMETRY_DB_PATH = empty_db_path
     fe = FeatureEngineer(mock_config)
-    
+
     with pytest.raises(Exception):
         fe.extract_features()
 
