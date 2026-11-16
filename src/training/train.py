@@ -25,8 +25,34 @@ logger = logging.getLogger(__name__)
 class AnomalyTrainer:
     """Trains, benchmarks, and persists anomaly detection models."""
 
+    HOLDOUT_FRACTION = 0.1  # newest 10% of rows is never trained on during model selection
+
     def __init__(self, config: Optional[Config] = None):
         self.config = config or Config()
+
+    @staticmethod
+    def inject_anomalies(holdout: pd.DataFrame) -> pd.DataFrame:
+        """Copies of real holdout rows with known failures: CPU pinned, RAM pinned, disk jumping 20 points."""
+        cpu = holdout.copy()
+        cpu["cpu_rate_of_change"] = 100.0 - cpu["cpu_percent"]
+        cpu["cpu_percent"] = 100.0
+
+        ram = holdout.copy()
+        ram["ram_rate_of_change"] = 98.0 - ram["ram_percent"]
+        ram["ram_percent"] = 98.0
+
+        disk = holdout.copy()
+        disk["disk_percent"] = (disk["disk_percent"] + 20.0).clip(upper=100.0)
+        disk["disk_rate_of_change"] = 20.0
+
+        return pd.concat([cpu, ram, disk], ignore_index=True)
+
+    @staticmethod
+    def holdout_scores(model: Any, holdout: pd.DataFrame, injected: pd.DataFrame) -> Dict[str, float]:
+        """False alarms on unseen real data, recall on injected failures, and score = recall - false alarms."""
+        false_alarm_rate = float((model.predict(holdout) == -1).mean())
+        recall = float((model.predict(injected) == -1).mean())
+        return {"false_alarm_rate": false_alarm_rate, "recall": recall, "score": recall - false_alarm_rate}
 
     def _evaluate_model(self, model: Any, X: pd.DataFrame, model_name: str) -> Dict[str, Any]:
         """Helper to compute predictions and evaluation metrics for a candidate model."""
@@ -80,39 +106,51 @@ class AnomalyTrainer:
 
         start_time = time.time()
 
-        # 1. Isolation Forest
-        logger.info("Fitting Isolation Forest model...")
-        iso_forest = IsolationForest(
-            n_estimators=200,
-            contamination=self.config.CONTAMINATION,
-            random_state=42
-        )
-        iso_forest.fit(X)
-        iso_metrics = self._evaluate_model(iso_forest, X, "IsolationForest")
+        def make_models():
+            return {
+                "IsolationForest": IsolationForest(
+                    n_estimators=200, contamination=self.config.CONTAMINATION, random_state=42
+                ),
+                # novelty=True so the fitted model can score new rows online
+                "LocalOutlierFactor": LocalOutlierFactor(
+                    n_neighbors=20, contamination=self.config.CONTAMINATION, novelty=True
+                ),
+            }
 
-        # 2. Local Outlier Factor (novelty=True for online inference)
-        logger.info("Fitting Local Outlier Factor model...")
-        lof = LocalOutlierFactor(
-            n_neighbors=20,
-            contamination=self.config.CONTAMINATION,
-            novelty=True
-        )
-        lof.fit(X)
-        lof_metrics = self._evaluate_model(lof, X, "LocalOutlierFactor")
+        # 1. Model selection on data the models never saw. Rows arrive oldest first from the feature SQL,
+        # so the newest 10% is a time-based holdout. Scoring on training data favoured LOF, because with
+        # novelty=True every training row is its own nearest neighbour.
+        split = int(len(X) * (1 - self.HOLDOUT_FRACTION))
+        X_train, X_holdout = X.iloc[:split], X.iloc[split:]
+        injected = self.inject_anomalies(X_holdout)
+        holdout = {}
+        for name, model in make_models().items():
+            logger.info(f"Fitting {name} on the first {len(X_train)} rows for selection...")
+            model.fit(X_train)
+            holdout[name] = self.holdout_scores(model, X_holdout, injected)
+            logger.info(
+                f"{name}: recall {holdout[name]['recall']:.3f} on {len(injected)} injected failures, "
+                f"false alarms {holdout[name]['false_alarm_rate']:.4f} on {len(X_holdout)} unseen rows"
+            )
+        # Highest recall minus false alarms wins; a tie goes to Isolation Forest (listed first).
+        best_model_name = max(holdout, key=lambda n: holdout[n]["score"])
+
+        # 2. Refit both on all rows for serving.
+        models = make_models()
+        for model in models.values():
+            model.fit(X)
+        iso_forest, lof = models["IsolationForest"], models["LocalOutlierFactor"]
+        iso_metrics = {**self._evaluate_model(iso_forest, X, "IsolationForest"), **holdout["IsolationForest"]}
+        lof_metrics = {**self._evaluate_model(lof, X, "LocalOutlierFactor"), **holdout["LocalOutlierFactor"]}
+        best_model = models[best_model_name]
+        best_anomaly_rate = (iso_metrics if best_model_name == "IsolationForest" else lof_metrics)["anomaly_rate"]
 
         training_duration = time.time() - start_time
 
-        # Select primary model
-        if iso_metrics["anomaly_rate"] <= lof_metrics["anomaly_rate"]:
-            best_model = iso_forest
-            best_model_name = "IsolationForest"
-            best_anomaly_rate = iso_metrics["anomaly_rate"]
-        else:
-            best_model = lof
-            best_model_name = "LocalOutlierFactor"
-            best_anomaly_rate = lof_metrics["anomaly_rate"]
-
-        logger.info(f"Selected {best_model_name} as primary model (anomaly rate: {best_anomaly_rate:.4f})")
+        logger.info(
+            f"Selected {best_model_name} as primary model "
+            f"(holdout score {holdout[best_model_name]['score']:.3f}, anomaly rate {best_anomaly_rate:.4f})"
+        )
 
         # Persist models locally
         os.makedirs(self.config.MODEL_DIR, exist_ok=True)
@@ -132,6 +170,9 @@ class AnomalyTrainer:
             "features": list(self.config.FEATURE_COLUMNS),
             "feature_columns": list(self.config.FEATURE_COLUMNS),
             "anomaly_rate": float(best_anomaly_rate),
+            "holdout_recall": holdout[best_model_name]["recall"],
+            "holdout_false_alarm_rate": holdout[best_model_name]["false_alarm_rate"],
+            "selection": {name: holdout[name] for name in holdout},
             "mlflow_run_id": "local-run"
         }
 
@@ -153,6 +194,10 @@ class AnomalyTrainer:
                 mlflow.log_metrics({
                     "isolation_forest_anomaly_rate": iso_metrics["anomaly_rate"],
                     "lof_anomaly_rate": lof_metrics["anomaly_rate"],
+                    "isolation_forest_holdout_recall": iso_metrics["recall"],
+                    "isolation_forest_holdout_false_alarm_rate": iso_metrics["false_alarm_rate"],
+                    "lof_holdout_recall": lof_metrics["recall"],
+                    "lof_holdout_false_alarm_rate": lof_metrics["false_alarm_rate"],
                     "training_duration_seconds": training_duration
                 })
 

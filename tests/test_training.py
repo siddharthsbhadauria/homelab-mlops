@@ -66,3 +66,29 @@ def test_trained_model_can_predict(mock_mlflow, mock_config, sample_features_df)
 
     assert predictions.shape == (len(sample_features_df),)
     assert set(np.unique(predictions)).issubset({1, -1})
+
+
+@patch('src.training.train.mlflow')
+def test_selection_uses_holdout_and_injected_failures(mock_mlflow, mock_config, sample_features_df):
+    results = AnomalyTrainer(mock_config).train(sample_features_df)
+
+    iso = results["metrics"]["isolation_forest"]
+    lof = results["metrics"]["local_outlier_factor"]
+    for m in (iso, lof):
+        assert 0.0 <= m["recall"] <= 1.0
+        assert 0.0 <= m["false_alarm_rate"] <= 1.0
+        assert m["score"] == pytest.approx(m["recall"] - m["false_alarm_rate"])
+    best = iso if results["best_model"] == "IsolationForest" else lof
+    assert best["score"] == max(iso["score"], lof["score"])
+    assert results["metadata"]["holdout_recall"] == best["recall"]
+
+
+def test_injected_anomalies_are_real_failures(sample_features_df):
+    holdout = sample_features_df[Config.FEATURE_COLUMNS].tail(20)
+    injected = AnomalyTrainer.inject_anomalies(holdout)
+
+    assert len(injected) == 3 * len(holdout)
+    assert (injected["cpu_percent"].iloc[:20] == 100.0).all()
+    assert (injected["ram_percent"].iloc[20:40] == 98.0).all()
+    assert (injected["disk_percent"].iloc[40:] <= 100.0).all()
+    assert (injected["disk_rate_of_change"].iloc[40:] == 20.0).all()
