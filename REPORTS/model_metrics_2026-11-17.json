@@ -1,24 +1,24 @@
 {
-  "last_updated": "2026-11-17T13:54:21.084386+00:00",
+  "last_updated": "2026-11-17T19:54:24.385985+00:00",
   "model_type": "LocalOutlierFactor",
   "algorithm": "LocalOutlierFactor",
-  "anomaly_rate": 0.008204480908804039,
-  "holdout_recall": 0.92043463021381,
-  "holdout_false_alarm_rate": 0.1871713985278654,
+  "anomaly_rate": 0.008078900430175218,
+  "holdout_recall": 0.926974143955276,
+  "holdout_false_alarm_rate": 0.19077568134171907,
   "selection": {
     "IsolationForest": {
-      "false_alarm_rate": 0.006309148264984227,
-      "recall": 0.03294777427269541,
-      "score": 0.02663862600771118
+      "false_alarm_rate": 0.007337526205450734,
+      "recall": 0.035290006988120196,
+      "score": 0.027952480782669462
     },
     "LocalOutlierFactor": {
-      "false_alarm_rate": 0.1871713985278654,
-      "recall": 0.92043463021381,
-      "score": 0.7332632316859446
+      "false_alarm_rate": 0.19077568134171907,
+      "recall": 0.926974143955276,
+      "score": 0.7361984626135569
     }
   },
-  "n_samples_trained": 9507,
+  "n_samples_trained": 9531,
   "features_count": 18,
-  "mlflow_run_id": "626d25404c274f0c9cfac2d54b90a4b3",
+  "mlflow_run_id": "da8608938c534ba6b0510448b2f7cd8e",
   "status": "HEALTHY"
 }
