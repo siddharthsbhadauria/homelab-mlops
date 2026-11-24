@@ -1,24 +1,24 @@
 {
-  "last_updated": "2026-11-24T07:55:54.283493+00:00",
+  "last_updated": "2026-11-24T13:55:58.313199+00:00",
   "model_type": "LocalOutlierFactor",
   "algorithm": "LocalOutlierFactor",
-  "anomaly_rate": 0.0075832184360843016,
-  "holdout_recall": 0.9304461942257218,
-  "holdout_false_alarm_rate": 0.3661417322834646,
+  "anomaly_rate": 0.007565337001375516,
+  "holdout_recall": 0.9286182056319581,
+  "holdout_false_alarm_rate": 0.38605108055009824,
   "selection": {
     "IsolationForest": {
-      "false_alarm_rate": 0.03346456692913386,
-      "recall": 0.08759842519685039,
-      "score": 0.05413385826771653
+      "false_alarm_rate": 0.03241650294695481,
+      "recall": 0.08447937131630648,
+      "score": 0.052062868369351666
     },
     "LocalOutlierFactor": {
-      "false_alarm_rate": 0.3661417322834646,
-      "recall": 0.9304461942257218,
-      "score": 0.5643044619422573
+      "false_alarm_rate": 0.38605108055009824,
+      "recall": 0.9286182056319581,
+      "score": 0.5425671250818598
     }
   },
-  "n_samples_trained": 10154,
+  "n_samples_trained": 10178,
   "features_count": 18,
-  "mlflow_run_id": "fe674cd8d1904abcaabfaa756cb111e5",
+  "mlflow_run_id": "6458a53dc0d54a4188fd189233d4e983",
   "status": "HEALTHY"
 }
