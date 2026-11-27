@@ -1,0 +1,24 @@
+{
+  "last_updated": "2026-11-27T01:56:35.087550+00:00",
+  "model_type": "LocalOutlierFactor",
+  "algorithm": "LocalOutlierFactor",
+  "anomaly_rate": 0.0074870416586676905,
+  "holdout_recall": 0.936340371081254,
+  "holdout_false_alarm_rate": 0.5690978886756238,
+  "selection": {
+    "IsolationForest": {
+      "false_alarm_rate": 0.03838771593090211,
+      "recall": 0.10684580934101087,
+      "score": 0.06845809341010876
+    },
+    "LocalOutlierFactor": {
+      "false_alarm_rate": 0.5690978886756238,
+      "recall": 0.936340371081254,
+      "score": 0.3672424824056302
+    }
+  },
+  "n_samples_trained": 10418,
+  "features_count": 18,
+  "mlflow_run_id": "9218cd0a9d6f4338bb7b8ceaae0df965",
+  "status": "HEALTHY"
+}
